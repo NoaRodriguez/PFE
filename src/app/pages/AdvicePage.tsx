@@ -15,7 +15,7 @@ export default function AdvicePage({ onNavigate }: AdvicePageProps) {
   );
 
   const getGoalAdvice = () => {
-    switch (userProfile?.goal) {
+    switch (userProfile?.goals?.[0]) {
       case 'reprise':
         return "Pour reprendre le sport en douceur, privilégiez une alimentation équilibrée avec des glucides complexes pour l'énergie et des protéines pour la récupération.";
       case 'hygiene':

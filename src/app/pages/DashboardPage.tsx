@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Calendar, Activity, Utensils, User, LogOut, Moon, Sun, Lightbulb } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { getAdviceOfTheDay } from '../data/nutritionAdvices';
-import logo from 'figma:asset/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
+import logo from '../../assets/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;

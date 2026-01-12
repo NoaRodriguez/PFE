@@ -54,7 +54,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
-  const toggleDarkMode = () => setIsDarkMode(prev => !prev);
+  const toggleDarkMode = () => setIsDarkMode((prev: DailyNutrition | null) => !prev);
 
   const login = () => setIsLoggedIn(true);
   const logout = () => {

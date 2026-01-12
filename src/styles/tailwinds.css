@@ -1,6 +1,1 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Si tu utilises une animation custom, tu peux importer ici : */
-/* @import 'tw-animate-css'; */
+@import "tailwindcss";

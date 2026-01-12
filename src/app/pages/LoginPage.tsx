@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import logo from 'figma:asset/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
+import logo from '../../assets/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
 
 export default function LoginPage() {
   const { login } = useApp();
