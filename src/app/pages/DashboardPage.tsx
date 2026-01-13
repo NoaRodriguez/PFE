@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Calendar, Activity, Utensils, User, LogOut, Moon, Sun, Lightbulb } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { getAdviceOfTheDay } from '../data/nutritionAdvices';
+import WeeklyCalendar from '../components/WeeklyCalendar';
 import logo from '../../assets/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
 
 interface DashboardPageProps {
@@ -94,7 +95,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             </div>
           </div>
         </div>
-
+        <WeeklyCalendar sessions={sessions} competitions={competitions} />
         {/* Today's Overview */}
         <div className="space-y-4">
           {/* Today's Sessions */}
