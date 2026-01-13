@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Pencil, Check, User, Activity, Target, Plus, X, ChevronRight } from 'lucide-react';
-import { UserGoal, SportType } from '../types';
+import { User, Activity, Target, ChevronRight } from 'lucide-react';
+import { UserGoal, SportType, Gender } from '../types';
 import PageHeader from '../components/PageHeader';
 
 interface ProfilePageProps {
@@ -9,17 +9,19 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ onNavigate }: ProfilePageProps) {
-  const { userProfile, setUserProfile, isDarkMode } = useApp();
+  const { userProfile, setUserProfile } = useApp();
   const [isEditing, setIsEditing] = useState(false);
+  
+  // On initialise les données du formulaire avec le profil existant
   const [formData, setFormData] = useState({
     name: userProfile?.name || '',
     age: userProfile?.age.toString() || '',
+    gender: userProfile?.gender || 'male' as Gender, // Nouveau champ
     weight: userProfile?.weight.toString() || '',
     height: userProfile?.height.toString() || '',
     goals: userProfile?.goals || [] as UserGoal[],
     sports: userProfile?.sports || [] as SportType[],
-    customSports: userProfile?.customSports || [] as string[],
-    customSportInput: '',
+    // customSports supprimé
     trainingHoursPerWeek: userProfile?.trainingHoursPerWeek?.toString() || '',
   });
 
@@ -27,16 +29,17 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
     { value: 'reprise' as UserGoal, label: 'Reprendre le sport' },
     { value: 'hygiene' as UserGoal, label: 'Avoir une bonne hygiène de vie' },
     { value: 'competition' as UserGoal, label: 'Préparer une compétition' },
-    { value: 'sante' as UserGoal, label: 'Rester en bonne santé' },
+    { value: 'performance' as UserGoal, label: 'Améliorer mes perfs' }, // Mis à jour
     { value: 'perte-poids' as UserGoal, label: 'Perte de poids' },
   ];
 
   const sports = [
-    { value: 'course' as SportType, label: 'Course à pied', icon: '🏃' },
-    { value: 'velo' as SportType, label: 'Vélo', icon: '🚴' },
-    { value: 'natation' as SportType, label: 'Natation', icon: '🏊' },
+    { value: 'course' as SportType, label: 'Course à pied', icon: '🏃‍♂️' },
+    { value: 'velo' as SportType, label: 'Cyclisme', icon: '🚴‍♂️' },
+    { value: 'natation' as SportType, label: 'Natation', icon: '🏊‍♂️' },
     { value: 'trail' as SportType, label: 'Trail', icon: '⛰️' },
     { value: 'triathlon' as SportType, label: 'Triathlon', icon: '🏅' },
+    { value: 'autre' as SportType, label: 'Autre', icon: '⚡' },
   ];
 
   const toggleGoal = (goal: UserGoal) => {
@@ -57,40 +60,26 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
     }));
   };
 
-  const addCustomSport = () => {
-    if (formData.customSportInput.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        customSports: [...prev.customSports, prev.customSportInput.trim()],
-        customSportInput: ''
-      }));
-    }
-  };
-
-  const removeCustomSport = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      customSports: prev.customSports.filter((_, i) => i !== index)
-    }));
-  };
-
   const handleSave = () => {
     if (!userProfile) return;
 
-    const weight = parseInt(formData.weight);
-    const proteins = Math.round(weight * 1.6);
-    const carbs = Math.round(weight * 5);
+    const weight = parseFloat(formData.weight) || 0;
+    
+    // Calcul simplifié (à adapter selon tes règles métiers exactes)
+    const proteins = Math.round(weight * 1.8);
+    const carbs = Math.round(weight * 4);
     const fats = Math.round(weight * 1);
 
     setUserProfile({
       name: formData.name,
-      age: parseInt(formData.age),
-      weight: parseInt(formData.weight),
-      height: parseInt(formData.height),
+      age: parseInt(formData.age) || 0,
+      gender: formData.gender, // Sauvegarde du genre
+      weight: weight,
+      height: parseFloat(formData.height) || 0,
       goals: formData.goals,
       sports: formData.sports,
-      customSports: formData.customSports,
-      trainingHoursPerWeek: parseInt(formData.trainingHoursPerWeek),
+      customSports: [], // Vide car supprimé
+      trainingHoursPerWeek: parseFloat(formData.trainingHoursPerWeek) || 0,
       nutritionGoals: {
         proteins,
         carbs,
@@ -110,7 +99,6 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24">
-      {/* Header */}
       <PageHeader
         title="Mon Profil"
         subtitle="Mes informations"
@@ -121,8 +109,9 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
 
       <div className="max-w-md mx-auto p-4">
         {!isEditing ? (
+          /* --- MODE LECTURE --- */
           <div className="space-y-4">
-            {/* Personal Info */}
+            {/* Infos Perso */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#00F65C]/20 to-[#C1FB00]/20 rounded-xl flex items-center justify-center">
@@ -134,6 +123,12 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Prénom</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Genre</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {userProfile?.gender === 'female' ? 'Femme' : 'Homme'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Âge</span>
@@ -150,7 +145,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               </div>
             </div>
 
-            {/* Sports Info */}
+            {/* Activité Sportive */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#C1FB00]/20 to-[#F57BFF]/20 rounded-xl flex items-center justify-center">
@@ -167,21 +162,16 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                         {getSportLabel(sport)}
                       </span>
                     ))}
-                    {userProfile?.customSports.map((sport, idx) => (
-                      <span key={idx} className="px-3 py-1.5 bg-gradient-to-r from-[#00F65C]/10 to-[#C1FB00]/10 rounded-lg text-sm text-gray-900 dark:text-white">
-                        {sport}
-                      </span>
-                    ))}
                   </div>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Fréquence</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.trainingHoursPerWeek} heures / semaine</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Volume hebdo (moyen)</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.trainingHoursPerWeek}h / semaine</span>
                 </div>
               </div>
             </div>
 
-            {/* Goals */}
+            {/* Objectifs */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#F57BFF]/20 to-[#00F65C]/20 rounded-xl flex items-center justify-center">
@@ -197,37 +187,14 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                 ))}
               </div>
             </div>
-
-            {/* Nutrition Goals */}
-            <div className="bg-gradient-to-br from-[#00F65C]/10 via-[#C1FB00]/10 to-[#F57BFF]/10 rounded-2xl p-5 border border-[#00F65C]/20">
-              <h2 className="font-semibold text-lg text-gray-900 dark:text-white mb-4">Objectifs nutritionnels</h2>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="text-center">
-                  <div className="w-14 h-14 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-2 shadow">
-                    <span className="text-lg font-bold text-[#F57BFF]">{userProfile?.nutritionGoals.proteins}g</span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Protéines</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-14 h-14 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-2 shadow">
-                    <span className="text-lg font-bold text-[#00F65C]">{userProfile?.nutritionGoals.carbs}g</span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Glucides</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-14 h-14 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-2 shadow">
-                    <span className="text-lg font-bold text-[#C1FB00]">{userProfile?.nutritionGoals.fats}g</span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Lipides</p>
-                </div>
-              </div>
-            </div>
           </div>
         ) : (
+          /* --- MODE ÉDITION --- */
           <div className="space-y-4">
-            {/* Edit Form - Personal Info */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <h2 className="font-semibold text-lg text-gray-900 dark:text-white mb-4">Informations personnelles</h2>
+              <p className="text-xs text-gray-400 mb-4 italic">Vous pourrez modifier ces informations plus tard.</p>
+              
               <div className="space-y-4">
                 <div>
                   <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Prénom</label>
@@ -238,11 +205,42 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
                   />
                 </div>
+
+                {/* Sélecteur Genre */}
+                <div>
+                  <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Genre</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, gender: 'male' })}
+                      className={`flex-1 py-3 rounded-xl border-2 text-sm font-medium ${
+                        formData.gender === 'male'
+                          ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
+                          : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-500'
+                      }`}
+                    >
+                      Homme
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, gender: 'female' })}
+                      className={`flex-1 py-3 rounded-xl border-2 text-sm font-medium ${
+                        formData.gender === 'female'
+                          ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
+                          : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-500'
+                      }`}
+                    >
+                      Femme
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Âge</label>
                     <input
                       type="number"
+                      min="0"
                       value={formData.age}
                       onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
@@ -252,6 +250,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Poids (kg)</label>
                     <input
                       type="number"
+                      min="0"
                       value={formData.weight}
                       onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
@@ -262,15 +261,17 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Taille (cm)</label>
                   <input
                     type="number"
+                    min="0"
                     value={formData.height}
                     onChange={(e) => setFormData({ ...formData, height: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
                   />
                 </div>
                 <div>
-                  <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Fréquence (heures / semaine)</label>
+                  <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Heures sport / semaine (moyenne)</label>
                   <input
                     type="number"
+                    min="0"
                     value={formData.trainingHoursPerWeek}
                     onChange={(e) => setFormData({ ...formData, trainingHoursPerWeek: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
@@ -279,10 +280,9 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               </div>
             </div>
 
-            {/* Edit Form - Goals */}
+            {/* Edit Goals */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <h2 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">Mes objectifs</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Sélectionnez vos objectifs</p>
               <div className="space-y-2">
                 {goals.map((goal) => (
                   <button
@@ -301,10 +301,9 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               </div>
             </div>
 
-            {/* Edit Form - Sports */}
+            {/* Edit Sports (Sans ajout manuel) */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <h2 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">Mes sports</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Sélectionnez vos sports</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {sports.map((sport) => (
                   <button
@@ -320,47 +319,6 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     <div className="text-xs text-gray-900 dark:text-white">{sport.label}</div>
                   </button>
                 ))}
-              </div>
-
-              {/* Custom Sports */}
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
-                <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Ajouter un autre sport</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={formData.customSportInput}
-                    onChange={(e) => setFormData({ ...formData, customSportInput: e.target.value })}
-                    onKeyPress={(e) => e.key === 'Enter' && addCustomSport()}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C] text-sm"
-                    placeholder="Ex: Escalade, Yoga..."
-                  />
-                  <button
-                    onClick={addCustomSport}
-                    className="p-2.5 bg-gradient-to-r from-[#00F65C] to-[#C1FB00] text-[#292929] rounded-xl hover:opacity-90 transition-opacity"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Custom Sports List */}
-                {formData.customSports.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {formData.customSports.map((sport, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2.5 bg-gradient-to-r from-[#00F65C]/10 to-[#C1FB00]/10 rounded-xl"
-                      >
-                        <span className="text-sm text-gray-900 dark:text-white">{sport}</span>
-                        <button
-                          onClick={() => removeCustomSport(index)}
-                          className="p-1 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
-                        >
-                          <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>

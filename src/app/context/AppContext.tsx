@@ -5,10 +5,26 @@ import {
   Competition, 
   DailyNutrition,
   ConsumedFood,
-  Ingredient
 } from '../types';
 import { ingredients } from '../data/ingredients';
 
+// --- PROFIL PAR DÉFAUT (Pour connexion directe, sans calories) ---
+const DEFAULT_PROFILE: UserProfile = {
+  name: 'Utilisateur',
+  age: 0,
+  gender: 'male', // AJOUT ICI
+  weight: 0,
+  height: 0,
+  goals: [], 
+  sports: [],
+  customSports: [],
+  trainingHoursPerWeek: 0,
+  nutritionGoals: {
+    proteins: 0,
+    carbs: 0,
+    fats: 0
+  }
+};
 interface AppContextType {
   isLoggedIn: boolean;
   userProfile: UserProfile | null;
@@ -17,7 +33,8 @@ interface AppContextType {
   dailyNutrition: DailyNutrition | null;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
-  login: () => void;
+  // login accepte maintenant un profil optionnel
+  login: (profile?: UserProfile) => void;
   logout: () => void;
   setUserProfile: (profile: UserProfile) => void;
   addSession: (session: TrainingSession) => void;
@@ -41,10 +58,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [dailyNutrition, setDailyNutrition] = useState<DailyNutrition | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : true; // Par défaut mode sombre
+    return saved ? JSON.parse(saved) : true;
   });
 
-  // Appliquer le mode sombre au body
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -54,9 +70,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
-  const toggleDarkMode = () => setIsDarkMode((prev: DailyNutrition | null) => !prev);
+  const toggleDarkMode = () => setIsDarkMode((prev: boolean) => !prev);
 
-  const login = () => setIsLoggedIn(true);
+  // LOGIQUE DE CONNEXION MODIFIÉE
+  const login = (profile?: UserProfile) => {
+    if (profile) {
+      // Cas Connexion : On fournit un profil (même vide), on rentre direct
+      setUserProfileState(profile);
+    } else {
+      // Cas Inscription : On ne fournit rien, userProfile reste null.
+      // App.tsx détectera (isLoggedIn=true && userProfile=null) et affichera ProfileSetupPage.
+    }
+    setIsLoggedIn(true);
+  };
+
   const logout = () => {
     setIsLoggedIn(false);
     setUserProfileState(null);
@@ -64,7 +91,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setUserProfile = (profile: UserProfile) => {
     setUserProfileState(profile);
-    // Initialize daily nutrition when profile is set
     const today = new Date().toISOString().split('T')[0];
     setDailyNutrition({
       date: today,
@@ -121,7 +147,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       const newConsumed = [...prev.consumed, food];
       
-      // Calculer les totaux en récupérant les ingrédients
       let totalProteins = 0;
       let totalCarbs = 0;
       let totalFats = 0;
@@ -155,7 +180,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const newConsumed = [...prev.consumed];
       newConsumed.splice(index, 1);
       
-      // Recalculer les totaux en récupérant les ingrédients
       let totalProteins = 0;
       let totalCarbs = 0;
       let totalFats = 0;

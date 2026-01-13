@@ -2,7 +2,7 @@ export type UserGoal =
   | 'reprise' // Reprendre le sport
   | 'hygiene' // Avoir une bonne hygiène de vie
   | 'competition' // Préparer une compétition
-  | 'sante' // Rester en bonne santé
+  | 'performance' // Améliorer mes perfs (Remplacé 'sante')
   | 'perte-poids'; // Perte de poids
 
 export type SportType = 
@@ -21,28 +21,31 @@ export type SessionType =
   | 'recuperation'
   | 'interval';
 
+export type Gender = 'male' | 'female'; // Nouveau type
+
 export interface UserProfile {
   name: string;
   age: number;
+  gender: Gender; // Nouveau champ
   weight: number;
   height: number;
-  goals: UserGoal[]; // Changed from goal to goals (array)
-  sports: SportType[]; // Changed from mainSport to sports (array)
-  customSports: string[]; // Added for custom sports
-  trainingHoursPerWeek: number; // hours per week (changed from trainingFrequency)
+  goals: UserGoal[]; 
+  sports: SportType[]; 
+  customSports: string[]; 
+  trainingHoursPerWeek: number; 
   nutritionGoals: {
-    proteins: number; // grams
-    carbs: number; // grams
-    fats: number; // grams
+    proteins: number; 
+    carbs: number; 
+    fats: number; 
   };
 }
 
 export interface TrainingSession {
   id: string;
   date: Date;
-  title: string; // Added title field
+  title: string;
   sport: SportType;
-  duration: number; // minutes
+  duration: number; 
   type: SessionType;
   notes?: string;
 }
@@ -52,27 +55,27 @@ export interface Competition {
   date: Date;
   name: string;
   sport: SportType;
-  distance: number; // km
-  expectedTime: string; // HH:MM:SS format
+  distance: number; 
+  expectedTime: string; 
 }
 
 export interface Ingredient {
   id: string;
   name: string;
-  proteins: number; // per 100g
-  carbs: number; // per 100g
-  fats: number; // per 100g
+  proteins: number; 
+  carbs: number; 
+  fats: number; 
   category: string;
 }
 
 export interface ConsumedFood {
   ingredientId: string;
-  quantity: number; // in grams
+  quantity: number; 
   timestamp: Date;
 }
 
 export interface DailyNutrition {
-  date: string; // YYYY-MM-DD
+  date: string; 
   consumed: ConsumedFood[];
   totalProteins: number;
   totalCarbs: number;
@@ -83,5 +86,5 @@ export interface NutritionAdvice {
   title: string;
   description: string;
   type: 'weekly' | 'daily' | 'pre-session' | 'during-session' | 'post-session';
-  relatedSession?: string; // session id
+  relatedSession?: string; 
 }
