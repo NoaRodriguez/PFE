@@ -13,13 +13,12 @@ export type SportType =
   | 'triathlon'
   | 'autre';
 
-export type SessionType = 
-  | 'frac' 
-  | 'endurance' 
-  | 'footing'
-  | 'tempo'
+export type SessionType =
   | 'recuperation'
-  | 'interval';
+  | 'endurance'
+  | 'tempo'
+  | 'frac'
+  | 'specific';
 
 export type Gender = 'male' | 'female'; // Nouveau type
 
@@ -47,6 +46,8 @@ export interface TrainingSession {
   sport: SportType;
   duration: number; 
   type: SessionType;
+  intensity?: number;
+  momentOfDay?: string;
   notes?: string;
 }
 

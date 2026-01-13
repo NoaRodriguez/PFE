@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { SportType, SessionType, TrainingSession } from '../types';
 
 interface EditSessionPageProps {
@@ -13,13 +13,16 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
   const session = sessions.find(s => s.id === sessionId);
 
   const [sessionForm, setSessionForm] = useState({
-    date: session ? new Date(session.date).toISOString().split('T')[0] : '',
     title: session?.title || '',
+    date: session ? new Date(session.date).toISOString().split('T')[0] : '',
+    moment: session?.momentOfDay || '',
     sport: session?.sport || '',
-    duration: session?.duration.toString() || '',
     type: session?.type || '',
+    intensity: session?.intensity != null ? session.intensity.toString() : '0',
+    duration: session?.duration.toString() || '',
     notes: session?.notes || '',
   });
+  const [showTypeTooltip, setShowTypeTooltip] = useState(false);
 
   const sports = [
     { value: 'course', label: 'Course à pied' },
@@ -30,30 +33,34 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
   ];
 
   const sessionTypes = [
-    { value: 'frac', label: 'Fractionné' },
-    { value: 'endurance', label: 'Endurance' },
-    { value: 'footing', label: 'Footing' },
-    { value: 'tempo', label: 'Tempo' },
     { value: 'recuperation', label: 'Récupération' },
-    { value: 'interval', label: 'Interval' },
+    { value: 'endurance', label: 'Endurance' },
+    { value: 'tempo', label: 'Rythme / Tempo' },
+    { value: 'frac', label: 'Fractionné' },
+    { value: 'specific', label: 'Spécifique' },
   ];
+
+  if (!session) return null;
 
   const handleSubmit = () => {
     if (!sessionForm.date || !sessionForm.title || !sessionForm.sport || !sessionForm.duration || !sessionForm.type) {
       alert('Veuillez remplir tous les champs obligatoires');
       return;
     }
-    
-    updateSession(sessionId, {
+
+    const updated: TrainingSession = {
       id: sessionId,
       date: new Date(sessionForm.date),
       title: sessionForm.title,
       sport: sessionForm.sport as SportType,
+      momentOfDay: sessionForm.moment,
       duration: parseInt(sessionForm.duration),
       type: sessionForm.type as SessionType,
+      intensity: parseInt(sessionForm.intensity) || 0,
       notes: sessionForm.notes,
-    });
-    
+    };
+
+    updateSession(sessionId, updated);
     onNavigate('calendar');
   };
 
@@ -64,13 +71,8 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
     }
   };
 
-  if (!session) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24">
-      {/* Header */}
       <div className="sticky top-0 z-50 bg-white dark:bg-gray-950">
         <div className="max-w-md mx-auto px-6 pt-4 pb-4">
           <div className="flex items-center gap-3 mb-3">
@@ -88,6 +90,17 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
       <div className="max-w-md mx-auto p-4">
         <div className="space-y-4">
           <div>
+            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Titre</label>
+            <input
+              type="text"
+              value={sessionForm.title}
+              onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
+              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
+              placeholder="Ex: Séance d'entraînement"
+            />
+          </div>
+
+          <div>
             <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Date</label>
             <input
               type="date"
@@ -98,14 +111,19 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
           </div>
 
           <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Titre</label>
-            <input
-              type="text"
-              value={sessionForm.title}
-              onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
+            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Moment de la journée</label>
+            <select
+              value={sessionForm.moment}
+              onChange={(e) => setSessionForm({ ...sessionForm, moment: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
-              placeholder="Ex: Séance d'entraînement"
-            />
+            >
+              <option value="">Sélectionner...</option>
+              <option value="matin-jeun">Matin à jeun (avant petit-déjeuner)</option>
+              <option value="matinee">Matinée (après petit-déjeuner)</option>
+              <option value="apres-midi">Après-midi</option>
+              <option value="fin-apres-midi">Fin d’après-midi / début de soirée</option>
+              <option value="soir">Soir (après dîner)</option>
+            </select>
           </div>
 
           <div>
@@ -123,7 +141,34 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
           </div>
 
           <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Type</label>
+            <div className="flex items-center gap-2">
+              <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Type</label>
+              <span className="relative inline-flex">
+                <button
+                  type="button"
+                  aria-expanded={showTypeTooltip}
+                  onClick={() => setShowTypeTooltip((s) => !s)}
+                  onBlur={() => setShowTypeTooltip(false)}
+                  className="p-1"
+                >
+                  <Info className="w-4 h-4 text-gray-500 dark:text-gray-300" />
+                </button>
+                <div
+                  role="tooltip"
+                  className={`absolute left-0 top-full mt-2 w-64 p-3 text-xs text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg transition-opacity ${showTypeTooltip ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                >
+                  <strong>Récupération</strong> - Effort très léger, pour récupérer.<br/>Exemples: <em>footing lent, nage facile, vélo souple</em>
+                  <hr className="my-2 border-t border-gray-100 dark:border-gray-700" />
+                  <strong>Endurance</strong> - Effort continu modéré, développe l'endurance.<br/>Exemples: <em>footing endurance, sortie vélo longue, nage continue</em>
+                  <hr className="my-2 border-t border-gray-100 dark:border-gray-700" />
+                  <strong>Rythme / Tempo</strong> - Effort soutenu proche du seuil, améliore le maintien d’allure.<br/>Exemples: <em>tempo run, sweet spot vélo, nage au seuil</em>
+                  <hr className="my-2 border-t border-gray-100 dark:border-gray-700" />
+                  <strong>Fractionné</strong> - Effort intense alterné avec récup, boost cardio/VMA.<br/>Exemples: <em>fractionné court/long, VMA, fractionné en côte</em>
+                  <hr className="my-2 border-t border-gray-100 dark:border-gray-700" />
+                  <strong>Spécifique</strong> - Travail technique, force ou terrain spécifique.<br/>Exemples: <em>côtes, trail technique, plaquettes natation</em>
+                </div>
+              </span>
+            </div>
             <select
               value={sessionForm.type}
               onChange={(e) => setSessionForm({ ...sessionForm, type: e.target.value })}
@@ -134,6 +179,30 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Intensité</label>
+            <div className="flex justify-between text-xs px-1 mb-1 text-gray-600 dark:text-gray-400">
+              <span>0</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={0}
+                max={3}
+                step={1}
+                value={sessionForm.intensity}
+                onChange={(e) => setSessionForm({ ...sessionForm, intensity: e.target.value })}
+                className="w-full"
+                style={{ accentColor: '#00F65C' }}
+              />
+              <div className="w-10 text-center text-sm text-gray-700 dark:text-gray-300">{sessionForm.intensity}</div>
+            </div>
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">0 = repos, 1 = léger, 2 = modéré, 3 = intense</div>
           </div>
 
           <div>
