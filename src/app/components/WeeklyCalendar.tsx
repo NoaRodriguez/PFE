@@ -4,26 +4,41 @@ import { TrainingSession, Competition } from '../types';
 interface WeeklyCalendarProps {
   sessions: TrainingSession[];
   competitions: Competition[];
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
 }
 
-export default function WeeklyCalendar({ sessions, competitions }: WeeklyCalendarProps) {
-  // On génère les 7 jours centrés sur aujourd'hui (de -3 à +3)
+// Même utilitaire que dans le Dashboard pour la cohérence
+const isSameDay = (date1: Date, date2: Date) => {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
+export default function WeeklyCalendar({ 
+  sessions, 
+  competitions, 
+  selectedDate, 
+  onSelectDate 
+}: WeeklyCalendarProps) {
   const days = [];
-  const today = new Date();
   
   for (let i = -3; i <= 3; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
+    const date = new Date(selectedDate);
+    date.setDate(selectedDate.getDate() + i);
     days.push(date);
   }
 
   const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
   const getEventsForDay = (date: Date) => {
-    const dateString = date.toDateString();
     return {
-      hasSession: sessions.some(s => new Date(s.date).toDateString() === dateString),
-      hasCompetition: competitions.some(c => new Date(c.date).toDateString() === dateString)
+      hasSession: sessions.some(s => isSameDay(s.date, date)),
+      hasCompetition: competitions.some(c => isSameDay(c.date, date))
     };
   };
 
@@ -31,22 +46,25 @@ export default function WeeklyCalendar({ sessions, competitions }: WeeklyCalenda
     <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-800 mb-4">
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, index) => {
-          const isToday = index === 3; // L'élément au milieu (index 3) est toujours aujourd'hui
+          const isSelected = isSameDay(date, selectedDate);
+          const isToday = isSameDay(date, new Date());
+          
           const { hasSession, hasCompetition } = getEventsForDay(date);
           const dayName = dayNames[date.getDay()];
           const dayNumber = date.getDate();
 
           return (
-            <div
+            <button
               key={index}
+              onClick={() => onSelectDate(date)}
               className={`aspect-[4/5] flex flex-col items-center justify-center rounded-xl transition-all ${
-                isToday
+                isSelected
                   ? 'bg-gradient-to-br from-[#00F65C]/20 to-[#C1FB00]/20 border-2 border-[#00F65C]'
                   : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-              }`}
+              } ${isToday && !isSelected ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
             >
               <span className={`text-[10px] mb-0.5 ${
-                isToday 
+                isSelected 
                   ? 'text-gray-900 dark:text-white font-bold' 
                   : 'text-gray-400 dark:text-gray-500'
               }`}>
@@ -54,8 +72,10 @@ export default function WeeklyCalendar({ sessions, competitions }: WeeklyCalenda
               </span>
               
               <span className={`text-sm font-bold mb-1 ${
-                isToday 
+                isSelected 
                   ? 'text-gray-900 dark:text-white' 
+                  : isToday
+                  ? 'text-[#00F65C]'
                   : 'text-gray-700 dark:text-gray-300'
               }`}>
                 {dayNumber}
@@ -70,7 +90,7 @@ export default function WeeklyCalendar({ sessions, competitions }: WeeklyCalenda
                   <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#C1FB00] to-[#F57BFF]" />
                 )}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

@@ -37,16 +37,22 @@ export default function VisualCalendar({ sessions, competitions }: VisualCalenda
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
+  // Comparaison robuste (même fonction locale)
+  const isSameDay = (date1: Date, date2: Date) => {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  };
+
   const getEventsForDay = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const dateString = date.toDateString();
-
-    const daySessions = sessions.filter(
-      s => new Date(s.date).toDateString() === dateString
-    );
-    const dayCompetitions = competitions.filter(
-      c => new Date(c.date).toDateString() === dateString
-    );
+    
+    const daySessions = sessions.filter(s => isSameDay(s.date, date));
+    const dayCompetitions = competitions.filter(c => isSameDay(c.date, date));
 
     return { sessions: daySessions, competitions: dayCompetitions };
   };
