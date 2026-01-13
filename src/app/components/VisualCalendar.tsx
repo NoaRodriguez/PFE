@@ -5,9 +5,16 @@ import { TrainingSession, Competition } from '../types';
 interface VisualCalendarProps {
   sessions: TrainingSession[];
   competitions: Competition[];
+  selectedDate: Date; // Ajout
+  onSelectDate: (date: Date) => void; // Ajout
 }
 
-export default function VisualCalendar({ sessions, competitions }: VisualCalendarProps) {
+export default function VisualCalendar({ 
+  sessions, 
+  competitions, 
+  selectedDate, 
+  onSelectDate 
+}: VisualCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const daysInMonth = new Date(
@@ -37,7 +44,6 @@ export default function VisualCalendar({ sessions, competitions }: VisualCalenda
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  // Comparaison robuste (même fonction locale)
   const isSameDay = (date1: Date, date2: Date) => {
     const d1 = new Date(date1);
     const d2 = new Date(date2);
@@ -48,22 +54,10 @@ export default function VisualCalendar({ sessions, competitions }: VisualCalenda
     );
   };
 
-  const getEventsForDay = (day: number) => {
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    
+  const getEventsForDay = (date: Date) => {
     const daySessions = sessions.filter(s => isSameDay(s.date, date));
     const dayCompetitions = competitions.filter(c => isSameDay(c.date, date));
-
     return { sessions: daySessions, competitions: dayCompetitions };
-  };
-
-  const isToday = (day: number) => {
-    const today = new Date();
-    return (
-      day === today.getDate() &&
-      currentDate.getMonth() === today.getMonth() &&
-      currentDate.getFullYear() === today.getFullYear()
-    );
   };
 
   const renderDays = () => {
@@ -75,25 +69,35 @@ export default function VisualCalendar({ sessions, competitions }: VisualCalenda
       const isValidDay = dayNumber > 0 && dayNumber <= daysInMonth;
 
       if (isValidDay) {
-        const events = getEventsForDay(dayNumber);
+        // On reconstruit la date précise de ce jour
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber);
+        
+        const events = getEventsForDay(date);
         const hasEvents = events.sessions.length > 0 || events.competitions.length > 0;
-        const today = isToday(dayNumber);
+        
+        const isSelected = isSameDay(date, selectedDate);
+        const isToday = isSameDay(date, new Date());
 
         days.push(
-          <div
+          <button
             key={i}
+            onClick={() => onSelectDate(date)}
             className={`aspect-square p-1.5 flex flex-col items-center justify-center rounded-lg transition-all ${
-              today
+              isSelected
                 ? 'bg-gradient-to-br from-[#00F65C]/20 to-[#C1FB00]/20 border-2 border-[#00F65C]'
+                : isToday
+                ? 'bg-gray-100 dark:bg-gray-800 border-2 border-transparent text-[#00F65C] font-bold'
                 : hasEvents
-                ? 'bg-gray-50 dark:bg-gray-800/50'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-900'
+                ? 'bg-gray-50 dark:bg-gray-800/50 border-2 border-transparent'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-900 border-2 border-transparent'
             }`}
           >
             <span
               className={`text-sm mb-1 ${
-                today
+                isSelected
                   ? 'text-gray-900 dark:text-white font-bold'
+                  : isToday
+                  ? 'text-[#00F65C]'
                   : 'text-gray-700 dark:text-gray-300'
               }`}
             >
@@ -107,7 +111,7 @@ export default function VisualCalendar({ sessions, competitions }: VisualCalenda
                 <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#C1FB00] to-[#F57BFF]" />
               )}
             </div>
-          </div>
+          </button>
         );
       } else {
         days.push(
