@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Calendar, Activity, Utensils, User, LogOut, Moon, Sun, Lightbulb, Trophy } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
+import { Calendar, Activity, LogOut, Moon, Sun, Lightbulb, Trophy } from 'lucide-react';
 import { getAdviceOfTheDay } from '../data/nutritionAdvices';
 import WeeklyCalendar from '../components/WeeklyCalendar';
 import logo from '../../assets/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
@@ -48,7 +47,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 1);
 
-  // Calculs nutritionnels (inchangés)
+  // Calculs nutritionnels
   const totalProteins = dailyNutrition?.totalProteins || 0;
   const totalCarbs = dailyNutrition?.totalCarbs || 0;
   const totalFats = dailyNutrition?.totalFats || 0;
@@ -134,7 +133,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
         {/* Selected Day Overview */}
         <div className="space-y-4">
-          {/* Liste Mixte (Séances + Compétitions) */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3 capitalize">{getDayTitle()}</h2>
             
@@ -143,11 +141,14 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 {selectedDayEvents.map((event) => (
                   <div
                     key={`${event.type}-${event.id}`}
-                    className={`p-3.5 rounded-xl bg-gradient-to-r ${
-                      event.type === 'session'
-                        ? 'from-[#00F65C]/10 to-[#C1FB00]/10' // Vert -> Jaune (Séance)
-                        : 'from-[#C1FB00]/10 to-[#F57BFF]/10' // Jaune -> Rose (Compétition)
-                    }`}
+                    className="p-3.5 rounded-xl"
+                    style={{
+                      // ICI : On force le dégradé en style inline pour être sûr qu'il s'affiche
+                      // 0.1 correspond à 10% d'opacité. Tu peux mettre 0.2 si tu veux que ce soit plus voyant.
+                      background: event.type === 'session' 
+                        ? 'linear-gradient(90deg, rgba(0, 246, 92, 0.1) 0%, rgba(193, 251, 0, 0.1) 100%)' // Vert -> Jaune
+                        : 'linear-gradient(90deg, rgba(193, 251, 0, 0.1) 0%, rgba(245, 123, 255, 0.1) 100%)' // Jaune -> Rose
+                    }}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -162,9 +163,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                         </p>
                       </div>
                       {event.type === 'session' ? (
-                        <Activity className="w-6 h-6 text-[#00F65C]" />
+                        <Activity className="w-6 h-6" style={{ color: '#00F65C' }} />
                       ) : (
-                        <Trophy className="w-6 h-6 text-[#F57BFF]" />
+                        <Trophy className="w-6 h-6" style={{ color: '#F57BFF' }} />
                       )}
                     </div>
                   </div>
@@ -194,7 +195,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             )}
           </div>
 
-          {/* Nutrition Goals (inchangé) */}
+          {/* Nutrition Goals */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Objectifs nutritionnels</h2>
             <div className="space-y-3.5">
