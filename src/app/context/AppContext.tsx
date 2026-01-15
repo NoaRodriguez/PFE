@@ -25,11 +25,11 @@ interface AppContextType {
   // Data methods
   setUserProfile: (profile: UserProfile) => Promise<void>;
   addSession: (session: TrainingSession) => Promise<void>;
-  updateSession: (id: number, session: TrainingSession) => Promise<void>;
-  deleteSession: (id: number) => Promise<void>;
+  updateSession: (session: TrainingSession) => Promise<void>;
+  deleteSession: (id: string | number) => Promise<void>;
   addCompetition: (competition: Competition) => Promise<void>;
-  updateCompetition: (id: number, competition: Competition) => Promise<void>;
-  deleteCompetition: (id: number) => Promise<void>;
+  updateCompetition: (competition: Competition) => Promise<void>;
+  deleteCompetition: (id: string | number) => Promise<void>;
   addConsumedFood: (food: ConsumedFood) => void;
   removeConsumedFood: (ingredientId: string) => void;
   getTodayNutrition: () => DailyNutrition;
@@ -293,7 +293,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateSession = async (id: number, session: TrainingSession) => {
+  const updateSession = async (session: TrainingSession) => {
+    // On récupère l'ID directement depuis l'objet session
+    const id = session.id;
+    
     const { error } = await supabase
       .from('seance')
       .update({
@@ -309,11 +312,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .eq('id', id);
 
     if (!error) {
+      // Mise à jour de l'état local
       setSessions(prev => prev.map(s => s.id === id ? session : s));
+    } else {
+      console.error("Erreur lors de la mise à jour de la séance:", error);
+      throw error; // Important pour que le 'catch' de la page fonctionne
     }
   };
 
-  const deleteSession = async (id: number) => {
+  const deleteSession = async (id: string | number) => {
     const { error } = await supabase.from('seance').delete().eq('id', id);
     if (!error) {
       setSessions(prev => prev.filter(s => s.id !== id));
@@ -349,7 +356,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateCompetition = async (id: number, competition: Competition) => {
+  const updateCompetition = async (competition: Competition) => {
+    // On récupère l'ID directement depuis l'objet competition
+    const id = competition.id;
+
     const updates = {
       date: competition.date,
       sport: competition.sport,
@@ -358,16 +368,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       intensité: Math.round(competition.intensité || 0)
     };
 
-    const { error } = await supabase.from('competition').update(updates).eq('id', id);
+    const { error } = await supabase
+      .from('competition')
+      .update(updates)
+      .eq('id', id);
 
     if (error) {
       console.error('Error updating competition:', error, updates);
+      throw error; // Important pour propager l'erreur
     } else {
+      // Mise à jour de l'état local
       setCompetitions(prev => prev.map(c => c.id === id ? competition : c));
     }
   };
 
-  const deleteCompetition = async (id: number) => {
+  const deleteCompetition = async (id: string | number) => {
     const { error } = await supabase.from('competition').delete().eq('id', id);
     if (!error) {
       setCompetitions(prev => prev.filter(c => c.id !== id));

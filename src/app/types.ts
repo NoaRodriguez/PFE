@@ -2,7 +2,7 @@ export type UserGoal =
   | 'reprise' // Reprendre le sport
   | 'hygiene' // Avoir une bonne hygiène de vie
   | 'competition' // Préparer une compétition
-  | 'performance' // Améliorer mes perfs (Remplacé 'sante')
+  | 'performance' // Améliorer mes perfs
   | 'perte-poids'; // Perte de poids
 
 export type SportType =
@@ -19,54 +19,55 @@ export type SessionType =
   | 'footing'
   | 'tempo'
   | 'recuperation'
-  | 'interval';
+  | 'interval'
+  | 'specific'; // Ajouté pour compatibilité
 
-export type Gender = 'male' | 'female'; // Nouveau type
+export type Gender = 'male' | 'female';
 
 export interface UserProfile {
-  id?: string; // UUID from auth.users
-  prenom: string; // was name
-  date_naissance?: string; // date
+  id?: string;
+  prenom: string;
+  date_naissance?: string;
   gender: Gender;
-  poids: number; // weight
-  taille: number; // height
-  objectifs: UserGoal[]; // goals
+  poids: number;
+  taille: number;
+  objectifs: UserGoal[];
   sports: SportType[];
   customSports: string[];
-  frequence_entrainement: string; // text in SQL
+  frequence_entrainement: string;
   nutritionGoals: {
     proteines: number;
     glucides: number;
     lipides: number;
   };
+  vma?: number; // Ajout pour compatibilité
+  ftp?: number; // Ajout pour compatibilité
 }
 
 export interface TrainingSession {
-  id?: number; // bigint
+  id: string | number; // String ou Number pour compatibilité Supabase
   id_utilisateur?: string;
-  date: string; // timestamp
-  titre: string; // title
+  date: Date | string; // Date ou String pour gérer les deux formats
+  titre: string;
   sport: SportType;
-  durée: number; // duration
+  durée: number;
   type: SessionType;
-  description?: string; // notes
-  intensité: 'faible' | 'moyenne' | 'haute'; // intensity
-  période_journée: 'matin' | 'midi' | 'soir'; // period
+  description?: string;
+  intensité: number; // Mis en number pour ton Slider (0-3)
+  période_journée: string; // String pour être plus souple ('matin', 'soir', etc.)
 }
 
 export interface Competition {
-  id?: number; // bigint
+  id: string | number;
   id_utilisateur?: string;
-  date: string; // timestamp
-  nom?: string; // name in logic, but not in sql? checking schema... 'sport text' is there. 'titre' is in seance, competition has no name in provided schema, but keep for UI if needed or map to sport? 
-  // Wait, the SQL for competition has: id, id_utilisateur, date, sport, durée, distance, intensité.
-  // The original has 'name'. I will keep 'name' optional or remove if strict.
-  // User said "Aligner les champs durée, distance, intensité".
-  // I will check if 'name' is used in UI later, but for now I will add the new fields.
+  date: Date | string;
+  nom: string; // Nom obligatoire pour l'affichage
   sport: SportType;
-  durée: number;
   distance: number;
-  intensité: number;
+  durée?: number;
+  intensité?: number;
+  description?: string;
+  location?: string;
 }
 
 export interface Ingredient {

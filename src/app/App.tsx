@@ -28,7 +28,8 @@ function AppContent() {
 
   // Handle edit pages with IDs
   if (currentPage.startsWith('edit-session:')) {
-    const sessionId = parseInt(currentPage.split(':')[1], 10);
+    // CORRECTION : On garde l'ID en string (UUID)
+    const sessionId = currentPage.split(':')[1];
     return (
       <>
         <EditSessionPage sessionId={sessionId} onNavigate={setCurrentPage} />
@@ -38,7 +39,8 @@ function AppContent() {
   }
 
   if (currentPage.startsWith('edit-competition:')) {
-    const competitionId = parseInt(currentPage.split(':')[1], 10);
+    // CORRECTION : On garde l'ID en string (UUID)
+    const competitionId = currentPage.split(':')[1];
     return (
       <>
         <EditCompetitionPage competitionId={competitionId} onNavigate={setCurrentPage} />
@@ -47,6 +49,30 @@ function AppContent() {
     );
   }
 
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <DashboardPage onNavigate={setCurrentPage} />;
+      case 'calendar':
+        return <CalendarPage onNavigate={setCurrentPage} />;
+      case 'tracker':
+        // Correction : Ajout de onNavigate
+        return <TrackerPage onNavigate={setCurrentPage} />;
+      case 'advice':
+        // Correction : Ajout de onNavigate
+        return <AdvicePage onNavigate={setCurrentPage} />;
+      case 'profile':
+        // Correction : Ajout de onNavigate
+        return <ProfilePage onNavigate={setCurrentPage} />;
+      case 'add-session':
+        return <AddSessionPage onNavigate={setCurrentPage} />;
+      case 'add-competition':
+        return <AddCompetitionPage onNavigate={setCurrentPage} />;
+      default:
+        return <DashboardPage onNavigate={setCurrentPage} />;
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">
       <div className="flex-1 overflow-y-auto">
@@ -54,7 +80,6 @@ function AppContent() {
       </div>
       {/* On cache la barre de nav sur les pages "pleine page" comme les formulaires */}
       {!currentPage.startsWith('add-') && !currentPage.startsWith('edit-') && (
-        // CORRECTION FINALE : Utilisation de la bonne prop 'currentPage'
         <BottomNav currentPage={currentPage} onNavigate={setCurrentPage} />
       )}
     </div>

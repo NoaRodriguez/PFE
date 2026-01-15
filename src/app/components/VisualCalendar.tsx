@@ -5,8 +5,8 @@ import { TrainingSession, Competition } from '../types';
 interface VisualCalendarProps {
   sessions: TrainingSession[];
   competitions: Competition[];
-  selectedDate: Date; // Ajout
-  onSelectDate: (date: Date) => void; // Ajout
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
 }
 
 export default function VisualCalendar({ 
@@ -44,7 +44,8 @@ export default function VisualCalendar({
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  const isSameDay = (date1: Date, date2: Date) => {
+  // CORRECTION ICI : Accepte Date | string pour la compatibilité BDD
+  const isSameDay = (date1: Date | string, date2: Date | string) => {
     const d1 = new Date(date1);
     const d2 = new Date(date2);
     return (
@@ -55,6 +56,7 @@ export default function VisualCalendar({
   };
 
   const getEventsForDay = (date: Date) => {
+    // TypeScript est maintenant content car isSameDay accepte les strings
     const daySessions = sessions.filter(s => isSameDay(s.date, date));
     const dayCompetitions = competitions.filter(c => isSameDay(c.date, date));
     return { sessions: daySessions, competitions: dayCompetitions };
@@ -69,7 +71,6 @@ export default function VisualCalendar({
       const isValidDay = dayNumber > 0 && dayNumber <= daysInMonth;
 
       if (isValidDay) {
-        // On reconstruit la date précise de ce jour
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber);
         
         const events = getEventsForDay(date);
@@ -125,7 +126,6 @@ export default function VisualCalendar({
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-800">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={previousMonth}
@@ -144,7 +144,6 @@ export default function VisualCalendar({
         </button>
       </div>
 
-      {/* Day names */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {dayNames.map((day) => (
           <div key={day} className="text-center text-xs text-gray-500 dark:text-gray-400 py-2">
@@ -153,12 +152,10 @@ export default function VisualCalendar({
         ))}
       </div>
 
-      {/* Days grid */}
       <div className="grid grid-cols-7 gap-1">
         {renderDays()}
       </div>
 
-      {/* Legend */}
       <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00]" />
