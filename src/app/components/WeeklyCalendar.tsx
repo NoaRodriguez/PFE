@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TrainingSession, Competition } from '../types';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface WeeklyCalendarProps {
   sessions: TrainingSession[];
@@ -25,6 +26,9 @@ export default function WeeklyCalendar({
   selectedDate,
   onSelectDate
 }: WeeklyCalendarProps) {
+  // État pour gérer le début de la semaine visible
+  const [startOfWeek, setStartOfWeek] = useState(new Date());
+
   const days = [];
 
   for (let i = -3; i <= 3; i++) {
@@ -40,6 +44,18 @@ export default function WeeklyCalendar({
       hasSession: sessions.some(s => isSameDay(s.date, date)),
       hasCompetition: competitions.some(c => isSameDay(c.date, date))
     };
+  };
+
+  const handlePrevWeek = () => {
+    const newDate = new Date(startOfWeek);
+    newDate.setDate(startOfWeek.getDate() - 7);
+    setStartOfWeek(newDate);
+  };
+
+  const handleNextWeek = () => {
+    const newDate = new Date(startOfWeek);
+    newDate.setDate(startOfWeek.getDate() + 7);
+    setStartOfWeek(newDate);
   };
 
   return (
@@ -78,18 +94,13 @@ export default function WeeklyCalendar({
                 {dayNumber}
               </span>
 
-              {/* Indicateurs d'événements */}
-              <div className="flex gap-0.5 h-1.5">
-                {hasSession && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00]" />
-                )}
-                {hasCompetition && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#C1FB00] to-[#F57BFF]" />
-                )}
-              </div>
-            </button>
-          );
-        })}
+        {/* Flèche Droite */}
+        <button 
+          onClick={handleNextWeek}
+          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+        </button>
       </div>
     </div>
   );
