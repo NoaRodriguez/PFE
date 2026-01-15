@@ -2,3 +2,24 @@
 @import './tailwinds.css';
 @import './theme.css';
 @import './date-picker.css';
+@import "tailwindcss";
+
+@layer base {
+  /* On autorise le scroll naturel sur toute la page */
+  html, body {
+    @apply h-full bg-gray-50 dark:bg-gray-950;
+  }
+  
+  #root {
+    @apply h-full;
+  }
+}
+
+/* Masquer la scrollbar tout en gardant le scroll fonctionnel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

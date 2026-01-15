@@ -323,7 +323,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteSession = async (id: string | number) => {
     const { error } = await supabase.from('seance').delete().eq('id', id);
     if (!error) {
-      setSessions(prev => prev.filter(s => s.id !== id));
+      // CORRECTION : On convertit tout en String pour être sûr que "15" élimine bien 15
+      setSessions(prev => prev.filter(s => String(s.id) !== String(id)));
+    } else {
+      console.error("Erreur lors de la suppression de la séance:", error);
     }
   };
 
@@ -385,7 +388,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteCompetition = async (id: string | number) => {
     const { error } = await supabase.from('competition').delete().eq('id', id);
     if (!error) {
-      setCompetitions(prev => prev.filter(c => c.id !== id));
+      // CORRECTION : Idem ici, conversion en String pour la comparaison
+      setCompetitions(prev => prev.filter(c => String(c.id) !== String(id)));
+    } else {
+      console.error("Erreur lors de la suppression de la compétition:", error);
     }
   };
 

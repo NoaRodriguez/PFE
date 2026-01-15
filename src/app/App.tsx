@@ -21,32 +21,40 @@ function AppContent() {
     return <LoginPage />;
   }
 
-  // Si connecté mais pas de profil (cas inscription en cours)
   if (isLoggedIn && !userProfile) {
     return <ProfileSetupPage />;
   }
 
-  // Handle edit pages with IDs
+  // --- Gestion des pages d'édition ---
   if (currentPage.startsWith('edit-session:')) {
-    // CORRECTION : On garde l'ID en string (UUID)
     const sessionId = currentPage.split(':')[1];
     return (
-      <>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         <EditSessionPage sessionId={sessionId} onNavigate={setCurrentPage} />
         <BottomNav currentPage="calendar" onNavigate={setCurrentPage} />
-      </>
+      </div>
     );
   }
 
   if (currentPage.startsWith('edit-competition:')) {
-    // CORRECTION : On garde l'ID en string (UUID)
     const competitionId = currentPage.split(':')[1];
     return (
-      <>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         <EditCompetitionPage competitionId={competitionId} onNavigate={setCurrentPage} />
         <BottomNav currentPage="calendar" onNavigate={setCurrentPage} />
-      </>
+      </div>
     );
+  }
+
+  // --- Gestion des pages d'ajout ---
+  if (currentPage.startsWith('add-session:')) {
+    const date = currentPage.split(':')[1];
+    return <AddSessionPage onNavigate={setCurrentPage} initialDate={date} />;
+  }
+
+  if (currentPage.startsWith('add-competition:')) {
+    const date = currentPage.split(':')[1];
+    return <AddCompetitionPage onNavigate={setCurrentPage} initialDate={date} />;
   }
 
   const renderPage = () => {
@@ -56,13 +64,10 @@ function AppContent() {
       case 'calendar':
         return <CalendarPage onNavigate={setCurrentPage} />;
       case 'tracker':
-        // Correction : Ajout de onNavigate
         return <TrackerPage onNavigate={setCurrentPage} />;
       case 'advice':
-        // Correction : Ajout de onNavigate
         return <AdvicePage onNavigate={setCurrentPage} />;
       case 'profile':
-        // Correction : Ajout de onNavigate
         return <ProfilePage onNavigate={setCurrentPage} />;
       case 'add-session':
         return <AddSessionPage onNavigate={setCurrentPage} />;
@@ -73,13 +78,21 @@ function AppContent() {
     }
   };
 
+  // On vérifie si on doit afficher la barre de navigation
+  const showBottomNav = !currentPage.startsWith('add-') && !currentPage.startsWith('edit-');
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="flex-1 overflow-y-auto">
+    // CORRECTION MAJEURE : On utilise min-h-screen au lieu de h-screen
+    // Et on laisse le navigateur gérer le scroll (plus de overflow-y-auto ici)
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
+      
+      {/* Contenu principal qui grandit selon le besoin */}
+      <div className={`flex-1 ${showBottomNav ? 'pb-24' : ''}`}>
         {renderPage()}
       </div>
-      {/* On cache la barre de nav sur les pages "pleine page" comme les formulaires */}
-      {!currentPage.startsWith('add-') && !currentPage.startsWith('edit-') && (
+
+      {/* Barre de navigation fixe en bas */}
+      {showBottomNav && (
         <BottomNav currentPage={currentPage} onNavigate={setCurrentPage} />
       )}
     </div>

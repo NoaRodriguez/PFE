@@ -6,14 +6,13 @@ import ConfirmModal from '../components/ConfirmModal';
 
 interface EditCompetitionPageProps {
   onNavigate: (page: string) => void;
-  competitionId: string | number; // Accepte les deux formats
+  competitionId: string | number;
 }
 
 export default function EditCompetitionPage({ onNavigate, competitionId }: EditCompetitionPageProps) {
   const { competitions, updateCompetition, deleteCompetition } = useApp();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Utilitaire de comparaison ID
   const idsMatch = (id1: string | number, id2: string | number) => {
     return String(id1) === String(id2);
   };
@@ -41,10 +40,7 @@ export default function EditCompetitionPage({ onNavigate, competitionId }: EditC
   }
 
   const handleSave = async () => {
-    // 1. Sécurité : On vérifie que la compétition existe bien
     if (!competition) return;
-    
-    // 2. Validation des champs
     if (!nom || !distance) {
       alert("Veuillez remplir le nom et la distance.");
       return;
@@ -52,13 +48,13 @@ export default function EditCompetitionPage({ onNavigate, competitionId }: EditC
 
     try {
       await updateCompetition({
-        ...competition, // On garde les anciennes valeurs (ID, auteur...)
-        date: new Date(date), // On force le format Date
+        ...competition,
+        date: new Date(date),
         nom,
         sport,
         distance: parseFloat(distance),
         durée: parseInt(durée) || 0,
-        intensité: competition.intensité || 10, // On garde l'intensité existante ou 10 par défaut
+        intensité: competition.intensité || 10,
       });
       onNavigate('calendar');
     } catch (error) {
@@ -78,7 +74,8 @@ export default function EditCompetitionPage({ onNavigate, competitionId }: EditC
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 pb-6">
+    // CORRECTION SCROLL : pb-32
+    <div className="min-h-screen bg-white dark:bg-gray-950 pb-32">
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button 
@@ -177,8 +174,8 @@ export default function EditCompetitionPage({ onNavigate, competitionId }: EditC
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDelete}
-        title="Supprimer la compétition ?"
-        message="Cette action est irréversible."
+        title="Supprimer la compétition"
+        message="Etes-vous sur de vouloir supprimer cette compétition ? Cette action est irréversible."
       />
     </div>
   );

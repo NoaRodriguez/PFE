@@ -6,7 +6,7 @@ import ConfirmModal from '../components/ConfirmModal';
 
 interface EditSessionPageProps {
   onNavigate: (page: string) => void;
-  sessionId: string | number; // Accepte les deux formats
+  sessionId: string | number;
 }
 
 export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPageProps) {
@@ -14,14 +14,12 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showTypeTooltip, setShowTypeTooltip] = useState(false);
   
-  // Fonction utilitaire pour comparer les IDs (string ou number)
   const idsMatch = (id1: string | number, id2: string | number) => {
     return String(id1) === String(id2);
   };
 
   const session = sessions.find((s) => idsMatch(s.id, sessionId));
 
-  // États du formulaire
   const [date, setDate] = useState('');
   const [titre, setTitre] = useState('');
   const [sport, setSport] = useState<SportType>('course');
@@ -31,7 +29,6 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
   const [période_journée, setPeriodeJournee] = useState('');
   const [intensité, setIntensité] = useState('0');
 
-  // Initialisation du formulaire quand la session est trouvée
   useEffect(() => {
     if (session) {
       setDate(new Date(session.date).toISOString().split('T')[0]);
@@ -58,10 +55,7 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
   }
 
   const handleSave = async () => {
-    // 1. Sécurité : On vérifie que la session existe
     if (!session) return;
-
-    // 2. Validation
     if (!titre || !durée) {
        alert("Veuillez remplir le titre et la durée.");
        return;
@@ -97,8 +91,7 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 pb-6">
-      {/* Header */}
+    <div className="min-h-screen bg-white dark:bg-gray-950 pb-32">
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button 
@@ -118,7 +111,6 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-6">
-        
         {/* Titre */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Titre</label>
@@ -173,7 +165,7 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
                 <div className="absolute right-0 bottom-full mb-2 w-64 p-3 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-20 text-gray-600 dark:text-gray-300">
                   <p><strong>Endurance:</strong> Effort continu modéré.</p>
                   <p><strong>Fractionné:</strong> Intense alterné.</p>
-                  {/* ... autres types ... */}
+                  <p><strong>Tempo:</strong> Rythme soutenu.</p>
                 </div>
               )}
              <select
@@ -204,6 +196,13 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
                 onChange={(e) => setIntensité(e.target.value)}
                 className="w-full accent-[#00F65C]"
               />
+              {/* AJOUTÉ ICI : Les labels manquants */}
+              <div className="flex justify-between text-xs text-gray-500 mt-2">
+                <span>Repos</span>
+                <span>Léger</span>
+                <span>Modéré</span>
+                <span>Intense</span>
+              </div>
             </div>
         </div>
 
@@ -245,8 +244,8 @@ export default function EditSessionPage({ onNavigate, sessionId }: EditSessionPa
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDelete}
-        title="Supprimer la séance ?"
-        message="Cette action est irréversible."
+        title="Supprimer la séance"
+        message="Etes-vous sur de vouloir supprimer cette seance ? Cette action est irréversible."
       />
     </div>
   );
