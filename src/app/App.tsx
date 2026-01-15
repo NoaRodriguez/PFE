@@ -26,44 +26,26 @@ function AppContent() {
     return <ProfileSetupPage />;
   }
 
-  const renderPage = () => {
-    // Gestion de l'ajout de séance avec date pré-sélectionnée
-    if (currentPage.startsWith('add-session')) {
-      const dateParam = currentPage.split(':')[1];
-      return <AddSessionPage onNavigate={setCurrentPage} initialDate={dateParam} />;
-    }
+  // Handle edit pages with IDs
+  if (currentPage.startsWith('edit-session:')) {
+    const sessionId = parseInt(currentPage.split(':')[1], 10);
+    return (
+      <>
+        <EditSessionPage sessionId={sessionId} onNavigate={setCurrentPage} />
+        <BottomNav currentPage="calendar" onNavigate={setCurrentPage} />
+      </>
+    );
+  }
 
-    // Gestion de l'ajout de compétition avec date pré-sélectionnée
-    if (currentPage.startsWith('add-competition')) {
-      const dateParam = currentPage.split(':')[1];
-      return <AddCompetitionPage onNavigate={setCurrentPage} initialDate={dateParam} />;
-    }
-
-    if (currentPage.startsWith('edit-session:')) {
-      const sessionId = currentPage.split(':')[1];
-      return <EditSessionPage onNavigate={setCurrentPage} sessionId={sessionId} />;
-    }
-
-    if (currentPage.startsWith('edit-competition:')) {
-      const competitionId = currentPage.split(':')[1];
-      return <EditCompetitionPage onNavigate={setCurrentPage} competitionId={competitionId} />;
-    }
-
-    switch (currentPage) {
-      case 'dashboard':
-        return <DashboardPage onNavigate={setCurrentPage} />;
-      case 'calendar':
-        return <CalendarPage onNavigate={setCurrentPage} />;
-      case 'tracker':
-        return <TrackerPage onNavigate={setCurrentPage} />;
-      case 'advice':
-        return <AdvicePage onNavigate={setCurrentPage} />;
-      case 'profile':
-        return <ProfilePage onNavigate={setCurrentPage} />;
-      default:
-        return <DashboardPage onNavigate={setCurrentPage} />;
-    }
-  };
+  if (currentPage.startsWith('edit-competition:')) {
+    const competitionId = parseInt(currentPage.split(':')[1], 10);
+    return (
+      <>
+        <EditCompetitionPage competitionId={competitionId} onNavigate={setCurrentPage} />
+        <BottomNav currentPage="calendar" onNavigate={setCurrentPage} />
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">

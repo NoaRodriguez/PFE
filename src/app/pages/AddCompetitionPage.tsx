@@ -8,27 +8,47 @@ interface AddCompetitionPageProps {
   initialDate?: string; // Nouvelle prop
 }
 
-export default function AddCompetitionPage({ onNavigate, initialDate }: AddCompetitionPageProps) {
-  const { addCompetition } = useApp();
-  
-  // Utilisation de la date initiale
-  const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
-  const [name, setName] = useState('');
-  const [sport, setSport] = useState<SportType>('course');
-  const [distance, setDistance] = useState('');
-  const [expectedTime, setExpectedTime] = useState('');
+export default function AddCompetitionPage({ onNavigate }: AddCompetitionPageProps) {
+  const { addCompetition, isDarkMode } = useApp();
+  const [competitionForm, setCompetitionForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    nom: '',
+    sport: '',
+    distance: '',
+    durée: '', // ADDED: Schema requires duration (integer minutes presumably)
+    expectedTime: '', // User UI field? Not in schema. Maybe I should drop it or map it to duration? I'll keep it in state but not send to DB if not in schema.
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addCompetition({
-      id: Date.now().toString(),
-      date: new Date(date),
-      name,
-      sport,
-      distance: parseFloat(distance) || 0,
-      expectedTime,
-    });
-    onNavigate('calendar');
+  const sports = [
+    { value: 'course', label: 'Course à pied' },
+    { value: 'velo', label: 'Vélo' },
+    { value: 'natation', label: 'Natation' },
+    { value: 'trail', label: 'Trail' },
+    { value: 'triathlon', label: 'Triathlon' },
+  ];
+
+  const handleSubmit = async () => {
+    if (!competitionForm.nom || !competitionForm.date || !competitionForm.sport || !competitionForm.distance) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    try {
+      await addCompetition({
+        id: 0,
+        date: new Date(competitionForm.date).toISOString(), // Ensure ISO format for Supabase
+        nom: competitionForm.nom, // Will be ignored by DB but used for validation
+        sport: competitionForm.sport as SportType,
+        distance: parseFloat(competitionForm.distance),
+        durée: parseInt(competitionForm.durée) || 0,
+        intensité: 10
+      });
+
+      onNavigate('calendar');
+    } catch (error) {
+      console.error('Failed to add competition:', error);
+      alert("Erreur lors de l'ajout de la compétition. Vérifiez la console.");
+    }
   };
 
   return (
@@ -56,10 +76,10 @@ export default function AddCompetitionPage({ onNavigate, initialDate }: AddCompe
             </label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Marathon de Paris"
-              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-[#F57BFF] outline-none transition-all text-gray-900 dark:text-white"
+              value={competitionForm.nom}
+              onChange={(e) => setCompetitionForm({ ...competitionForm, nom: e.target.value })}
+              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
+              placeholder="Marathon de Paris"
             />
           </div>
 
@@ -104,16 +124,14 @@ export default function AddCompetitionPage({ onNavigate, initialDate }: AddCompe
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-              <Timer className="w-4 h-4" /> Objectif temps
-            </label>
+          <div>
+            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Durée estimée (minutes)</label>
             <input
-              type="text"
-              value={expectedTime}
-              onChange={(e) => setExpectedTime(e.target.value)}
-              placeholder="03:30:00"
-              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-[#F57BFF] outline-none transition-all text-gray-900 dark:text-white"
+              type="number"
+              value={competitionForm.durée}
+              onChange={(e) => setCompetitionForm({ ...competitionForm, durée: e.target.value })}
+              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
+              placeholder="240"
             />
           </div>
 

@@ -4,20 +4,23 @@ import { ArrowLeft } from 'lucide-react';
 import { SportType, Competition } from '../types';
 
 interface EditCompetitionPageProps {
-  competitionId: string;
+  competitionId: number;
   onNavigate: (page: string) => void;
 }
+
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function EditCompetitionPage({ competitionId, onNavigate }: EditCompetitionPageProps) {
   const { competitions, updateCompetition, deleteCompetition } = useApp();
   const competition = competitions.find(c => c.id === competitionId);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [competitionForm, setCompetitionForm] = useState({
     date: competition ? new Date(competition.date).toISOString().split('T')[0] : '',
-    name: competition?.name || '',
+    nom: competition?.nom || '',
     sport: competition?.sport || '',
     distance: competition?.distance.toString() || '',
-    expectedTime: competition?.expectedTime || '',
+    durée: competition?.durée.toString() || '',
   });
 
   const sports = [
@@ -28,28 +31,41 @@ export default function EditCompetitionPage({ competitionId, onNavigate }: EditC
     { value: 'triathlon', label: 'Triathlon' },
   ];
 
-  const handleSubmit = () => {
-    if (!competitionForm.date || !competitionForm.name || !competitionForm.sport || !competitionForm.distance || !competitionForm.expectedTime) {
+  const handleSubmit = async () => {
+    if (!competitionForm.date || !competitionForm.nom || !competitionForm.sport || !competitionForm.distance) {
       alert('Veuillez remplir tous les champs');
       return;
     }
-    
-    updateCompetition(competitionId, {
-      id: competitionId,
-      date: new Date(competitionForm.date),
-      name: competitionForm.name,
-      sport: competitionForm.sport as SportType,
-      distance: parseFloat(competitionForm.distance),
-      expectedTime: competitionForm.expectedTime,
-    });
-    
-    onNavigate('calendar');
+
+    try {
+      await updateCompetition(competitionId, {
+        id: competitionId,
+        date: new Date(competitionForm.date).toISOString(),
+        nom: competitionForm.nom,
+        sport: competitionForm.sport as SportType,
+        distance: parseFloat(competitionForm.distance),
+        durée: parseInt(competitionForm.durée) || 0,
+        intensité: competition?.intensité || 10
+      });
+
+      onNavigate('calendar');
+    } catch (error) {
+      console.error('Error updating competition:', error);
+      alert('Erreur lors de la modification de la compétition');
+    }
   };
 
-  const handleDelete = () => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette compétition ?')) {
-      deleteCompetition(competitionId);
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteCompetition(competitionId);
       onNavigate('calendar');
+    } catch (error) {
+      console.error('Error deleting competition:', error);
+      alert('Erreur lors de la suppression de la compétition');
     }
   };
 
@@ -90,8 +106,8 @@ export default function EditCompetitionPage({ competitionId, onNavigate }: EditC
             <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Nom de la compétition</label>
             <input
               type="text"
-              value={competitionForm.name}
-              onChange={(e) => setCompetitionForm({ ...competitionForm, name: e.target.value })}
+              value={competitionForm.nom}
+              onChange={(e) => setCompetitionForm({ ...competitionForm, nom: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
               placeholder="Marathon de Paris"
             />
@@ -124,19 +140,19 @@ export default function EditCompetitionPage({ competitionId, onNavigate }: EditC
           </div>
 
           <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Temps prévu (HH:MM:SS)</label>
+            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Durée estimée (minutes)</label>
             <input
-              type="text"
-              value={competitionForm.expectedTime}
-              onChange={(e) => setCompetitionForm({ ...competitionForm, expectedTime: e.target.value })}
+              type="number"
+              value={competitionForm.durée}
+              onChange={(e) => setCompetitionForm({ ...competitionForm, durée: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
-              placeholder="03:30:00"
+              placeholder="240"
             />
           </div>
 
           <div className="flex gap-3 pt-4">
             <button
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               className="flex-1 bg-red-500 text-white py-4 rounded-xl hover:bg-red-600 transition-all text-base font-medium shadow-lg"
             >
               Supprimer
@@ -150,6 +166,16 @@ export default function EditCompetitionPage({ competitionId, onNavigate }: EditC
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer la compétition"
+        message="Êtes-vous sûr de vouloir supprimer cette compétition ? Cette action est irréversible."
+        confirmText="Supprimer"
+        isDangerous={true}
+      />
     </div>
   );
 }

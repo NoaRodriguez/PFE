@@ -4,8 +4,8 @@ import { UserProfile } from '../types';
 import logo from '../../assets/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
 
 export default function LoginPage() {
-  const { login } = useApp();
-  
+  const { signIn, signUp } = useApp();
+
   // États pour gérer l'affichage des onglets
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('signup');
 
@@ -13,43 +13,32 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [username, setUsername] = useState('');
-  
+  // const [username, setUsername] = useState(''); // Removed logic dependency
+
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // --- FLUX CONNEXION (Utilisateur existant) ---
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
+    if (!email || !password) {
       setError('Veuillez remplir tous les champs');
       return;
     }
-    
-    // On crée un profil par défaut minimal avec juste le nom
-    // Le reste sera à 0 (géré par le contexte)
-    const defaultProfile: UserProfile = {
-      name: username,
-      age: 0,
-      gender: 'male',
-      weight: 0,
-      height: 0,
-      goals: [],
-      sports: [],
-      customSports: [],
-      trainingHoursPerWeek: 0,
-      nutritionGoals: {
-        proteins: 0,
-        carbs: 0,
-        fats: 0
-      }
-    };
 
-    // On passe le profil à login() -> Direction Dashboard directement
-    login(defaultProfile);
+    setLoading(true);
+    setError('');
+
+    const { error } = await signIn(email, password);
+
+    if (error) {
+      setError(error.message || 'Erreur de connexion');
+      setLoading(false);
+    }
   };
 
   // --- FLUX INSCRIPTION (Nouvel utilisateur) ---
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !confirmPassword) {
       setError('Veuillez remplir tous les champs');
@@ -59,11 +48,21 @@ export default function LoginPage() {
       setError('Les mots de passe ne correspondent pas');
       return;
     }
-    
-    // On appelle login() SANS profil.
-    // AppContext mettra isLoggedIn = true et userProfile = null.
-    // App.tsx détectera cela et affichera automatiquement ProfileSetupPage pour la suite.
-    login(); 
+
+    setLoading(true);
+    setError('');
+
+    const { error } = await signUp(email, password, { username: email.split('@')[0] });
+
+    if (error) {
+      setError(error.message || 'Erreur d\'inscription');
+      setLoading(false);
+    } else {
+      if (!error) {
+        setError('Inscription réussie ! Vérifiez vos emails.');
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -76,26 +75,24 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
-          
+
           {/* Tabs Header */}
           <div className="flex border-b border-gray-100 dark:border-gray-800">
             <button
               onClick={() => { setActiveTab('signup'); setError(''); }}
-              className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${
-                activeTab === 'signup'
-                  ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-              }`}
+              className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${activeTab === 'signup'
+                ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                }`}
             >
               Inscription
             </button>
             <button
               onClick={() => { setActiveTab('login'); setError(''); }}
-              className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${
-                activeTab === 'login'
-                  ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-              }`}
+              className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${activeTab === 'login'
+                ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                }`}
             >
               Connexion
             </button>
@@ -106,8 +103,8 @@ export default function LoginPage() {
               {activeTab === 'signup' ? 'Créer un compte' : 'Bon retour !'}
             </h1>
             <p className="text-center text-gray-500 dark:text-gray-400 mb-6 text-sm">
-              {activeTab === 'signup' 
-                ? 'Commencez votre transformation dès aujourd\'hui' 
+              {activeTab === 'signup'
+                ? 'Commencez votre transformation dès aujourd\'hui'
                 : 'Connectez-vous pour suivre vos progrès'}
             </p>
 
@@ -152,9 +149,10 @@ export default function LoginPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-[#00F65C] via-[#C1FB00] to-[#F57BFF] text-[#292929] py-3.5 rounded-2xl hover:opacity-90 transition-all shadow-lg font-bold text-sm mt-2"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-[#00F65C] via-[#C1FB00] to-[#F57BFF] text-[#292929] py-3.5 rounded-2xl hover:opacity-90 transition-all shadow-lg font-bold text-sm mt-2 disabled:opacity-50"
                 >
-                  Continuer
+                  {loading ? 'Chargement...' : 'Continuer'}
                 </button>
               </form>
             )}
@@ -163,13 +161,13 @@ export default function LoginPage() {
             {activeTab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nom d'utilisateur</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#C1FB00] focus:border-transparent outline-none transition-all text-sm"
-                    placeholder="Pseudo"
+                    placeholder="votre@email.com"
                   />
                 </div>
                 <div>
@@ -184,15 +182,15 @@ export default function LoginPage() {
                 </div>
                 <button
                   type="submit"
-                  // ICI : Changement du style pour le dégradé SOMA
-                  className="w-full bg-gradient-to-r from-[#00F65C] via-[#C1FB00] to-[#F57BFF] text-[#292929] py-3.5 rounded-2xl hover:opacity-90 transition-all shadow-lg font-bold text-sm mt-2"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-[#00F65C] via-[#C1FB00] to-[#F57BFF] text-[#292929] py-3.5 rounded-2xl hover:opacity-90 transition-all shadow-lg font-bold text-sm mt-2 disabled:opacity-50"
                 >
-                  Se connecter
+                  {loading ? 'Chargement...' : 'Se connecter'}
                 </button>
               </form>
             )}
           </div>
-          
+
           <div className="bg-gray-50 dark:bg-gray-800/50 p-4 text-center border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs text-gray-400 dark:text-gray-500">
               SOMA • Nutrition & Performance

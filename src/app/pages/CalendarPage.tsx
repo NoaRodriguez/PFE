@@ -102,9 +102,9 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
                           <CalendarIcon className="w-5 h-5 text-[#00F65C]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{event.title}</h3>
+                          <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{event.titre}</h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {event.duration} min • {event.sport}
+                            {new Date(event.date).toLocaleDateString('fr-FR')} • {event.durée} min
                           </p>
                         </div>
                         <span className="px-3 py-1 bg-[#00F65C]/10 text-[#00F65C] rounded-lg text-xs font-medium flex-shrink-0">
@@ -128,7 +128,7 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
                           <Trophy className="w-5 h-5 text-[#F57BFF]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{event.name}</h3>
+                          <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{event.nom}</h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
                             {event.distance} km • {event.sport}
                           </p>
