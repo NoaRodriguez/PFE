@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft, Clock, AlignLeft, Calendar as CalendarIcon, Activity } from 'lucide-react';
 import { SportType, SessionType } from '../types';
 
 interface AddSessionPageProps {
   onNavigate: (page: string) => void;
+  initialDate?: string; // Nouvelle prop
 }
 
 export default function AddSessionPage({ onNavigate }: AddSessionPageProps) {
@@ -60,36 +61,40 @@ export default function AddSessionPage({ onNavigate }: AddSessionPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 pb-24">
+    <div className="min-h-screen bg-white dark:bg-gray-950 pb-6">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white dark:bg-gray-950">
-        <div className="max-w-md mx-auto px-6 pt-4 pb-4">
-          <div className="flex items-center gap-3 mb-3">
-            <button onClick={() => onNavigate('calendar')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <ArrowLeft className="w-6 h-6 text-gray-900 dark:text-white" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-gray-900 dark:text-white">Nouvelle séance</h1>
-            </div>
-          </div>
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+          <button 
+            onClick={() => onNavigate('calendar')}
+            className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6 text-gray-900 dark:text-white" />
+          </button>
+          <h1 className="font-bold text-lg text-gray-900 dark:text-white">Nouvelle séance</h1>
+          <div className="w-10" />
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-800 to-transparent" />
       </div>
 
       <div className="max-w-md mx-auto p-4">
-        <div className="space-y-4">
-          <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Date</label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Titre */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Titre de la séance</label>
             <input
-              type="date"
-              value={sessionForm.date}
-              onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })}
-              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Sortie longue"
+              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-[#00F65C] outline-none transition-all text-gray-900 dark:text-white"
             />
           </div>
 
-          <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Titre</label>
+          {/* Date */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4" /> Date
+            </label>
             <input
               type="text"
               value={sessionForm.titre}
@@ -99,47 +104,60 @@ export default function AddSessionPage({ onNavigate }: AddSessionPageProps) {
             />
           </div>
 
-          <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Sport</label>
-            <select
-              value={sessionForm.sport}
-              onChange={(e) => setSessionForm({ ...sessionForm, sport: e.target.value })}
-              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
-            >
-              <option value="">Sélectionner...</option>
-              {sports.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+          {/* Sport & Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <Activity className="w-4 h-4" /> Sport
+              </label>
+              <select
+                value={sport}
+                onChange={(e) => setSport(e.target.value as SportType)}
+                className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-[#00F65C] outline-none transition-all text-gray-900 dark:text-white appearance-none"
+              >
+                <option value="course">Course à pied</option>
+                <option value="velo">Cyclisme</option>
+                <option value="natation">Natation</option>
+                <option value="triathlon">Triathlon</option>
+                <option value="trail">Trail</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as SessionType)}
+                className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-[#00F65C] outline-none transition-all text-gray-900 dark:text-white appearance-none"
+              >
+                <option value="footing">Footing</option>
+                <option value="frac">Fractionné</option>
+                <option value="endurance">Endurance</option>
+                <option value="tempo">Tempo</option>
+                <option value="recuperation">Récupération</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Type</label>
-            <select
-              value={sessionForm.type}
-              onChange={(e) => setSessionForm({ ...sessionForm, type: e.target.value })}
-              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
-            >
-              <option value="">Sélectionner...</option>
-              {sessionTypes.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Durée (minutes)</label>
+          {/* Durée */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <Clock className="w-4 h-4" /> Durée (minutes)
+            </label>
             <input
               type="number"
               value={sessionForm.durée}
               onChange={(e) => setSessionForm({ ...sessionForm, durée: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
               placeholder="60"
+              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-[#00F65C] outline-none transition-all text-gray-900 dark:text-white"
             />
           </div>
 
-          <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Description / Notes (optionnel)</label>
+          {/* Notes */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <AlignLeft className="w-4 h-4" /> Notes
+            </label>
             <textarea
               value={sessionForm.description}
               onChange={(e) => setSessionForm({ ...sessionForm, description: e.target.value })}
@@ -149,12 +167,12 @@ export default function AddSessionPage({ onNavigate }: AddSessionPageProps) {
           </div>
 
           <button
-            onClick={handleSubmit}
-            className="w-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00] text-[#292929] py-4 rounded-xl hover:opacity-90 transition-all text-base font-medium shadow-lg mt-6"
+            type="submit"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#00F65C] to-[#C1FB00] text-[#292929] font-bold shadow-lg hover:opacity-90 transition-opacity"
           >
             Ajouter la séance
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
