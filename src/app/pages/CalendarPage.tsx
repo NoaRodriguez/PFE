@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, Pencil } from 'lucide-react'; // Ajout de l'icone Pencil
+import { Plus, Pencil } from 'lucide-react';
 import VisualCalendar from '../components/VisualCalendar';
+import PageHeader from '../components/PageHeader';
 
 interface CalendarPageProps {
   onNavigate: (page: string) => void;
@@ -28,19 +29,21 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
   const selectedDaySessions = sessions.filter(s => isSameDay(s.date, selectedDate));
   const selectedDayCompetitions = competitions.filter(c => isSameDay(c.date, selectedDate));
 
-  // Fonction pour formater la date pour l'URL (YYYY-MM-DD)
   const getFormattedDate = () => {
-    // On utilise le décalage horaire pour éviter les problèmes de timezone
     const offset = selectedDate.getTimezoneOffset();
     const date = new Date(selectedDate.getTime() - (offset * 60 * 1000));
     return date.toISOString().split('T')[0];
   };
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-md mx-auto min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calendrier</h1>
-      </div>
+    // CORRECTION : Suppression de 'pt-4' pour remonter le contenu au même niveau que les autres pages
+    <div className="pb-24 px-4 max-w-md mx-auto min-h-screen bg-gray-50 dark:bg-gray-950">
+      
+      {/* Ajout du sous-titre pour la cohérence */}
+      <PageHeader 
+        title="Calendrier" 
+        subtitle="Planifiez vos séances et compétitions"
+      />
 
       <div className="mb-6">
         <VisualCalendar 
@@ -79,7 +82,6 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
                   <span className="text-xs font-bold bg-[#F57BFF]/10 text-[#F57BFF] px-2 py-1 rounded-full">
                     Compétition
                   </span>
-                  {/* Petit bouton modifier */}
                   <button className="p-2 text-gray-400 hover:text-[#F57BFF] transition-colors rounded-full hover:bg-[#F57BFF]/10">
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -100,7 +102,6 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="font-bold text-gray-900 dark:text-white">{session.durée} min</p>
-                  {/* Petit bouton modifier */}
                   <button className="p-2 text-gray-400 hover:text-[#00F65C] transition-colors rounded-full hover:bg-[#00F65C]/10">
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -110,7 +111,6 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
           </div>
         )}
 
-        {/* Boutons d'ajout avec Date Automatique */}
         <div className="grid grid-cols-2 gap-3 mt-4">
           <button
             onClick={() => onNavigate(`add-session:${getFormattedDate()}`)}
@@ -121,7 +121,6 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
           
           <button
             onClick={() => onNavigate(`add-competition:${getFormattedDate()}`)}
-            // MODIFICATION ICI : Dégradé Jaune -> Rose
             className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-[#C1FB00] to-[#F57BFF] rounded-2xl text-[#292929] font-bold shadow-lg hover:opacity-90 transition-opacity"
           >
             <Plus className="w-5 h-5" /> Compétition
