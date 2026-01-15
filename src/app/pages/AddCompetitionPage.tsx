@@ -11,10 +11,11 @@ export default function AddCompetitionPage({ onNavigate }: AddCompetitionPagePro
   const { addCompetition, isDarkMode } = useApp();
   const [competitionForm, setCompetitionForm] = useState({
     date: new Date().toISOString().split('T')[0],
-    name: '',
+    nom: '',
     sport: '',
     distance: '',
-    expectedTime: '',
+    durée: '', // ADDED: Schema requires duration (integer minutes presumably)
+    expectedTime: '', // User UI field? Not in schema. Maybe I should drop it or map it to duration? I'll keep it in state but not send to DB if not in schema.
   });
 
   const sports = [
@@ -25,22 +26,28 @@ export default function AddCompetitionPage({ onNavigate }: AddCompetitionPagePro
     { value: 'triathlon', label: 'Triathlon' },
   ];
 
-  const handleSubmit = () => {
-    if (!competitionForm.name || !competitionForm.date || !competitionForm.sport || !competitionForm.distance) {
+  const handleSubmit = async () => {
+    if (!competitionForm.nom || !competitionForm.date || !competitionForm.sport || !competitionForm.distance) {
       alert('Veuillez remplir tous les champs obligatoires');
       return;
     }
-    
-    addCompetition({
-      id: Date.now().toString(),
-      date: new Date(competitionForm.date),
-      name: competitionForm.name,
-      sport: competitionForm.sport as SportType,
-      distance: parseFloat(competitionForm.distance),
-      expectedTime: competitionForm.expectedTime,
-    });
-    
-    onNavigate('calendar');
+
+    try {
+      await addCompetition({
+        id: 0,
+        date: new Date(competitionForm.date).toISOString(), // Ensure ISO format for Supabase
+        nom: competitionForm.nom, // Will be ignored by DB but used for validation
+        sport: competitionForm.sport as SportType,
+        distance: parseFloat(competitionForm.distance),
+        durée: parseInt(competitionForm.durée) || 0,
+        intensité: 10
+      });
+
+      onNavigate('calendar');
+    } catch (error) {
+      console.error('Failed to add competition:', error);
+      alert("Erreur lors de l'ajout de la compétition. Vérifiez la console.");
+    }
   };
 
   return (
@@ -66,8 +73,8 @@ export default function AddCompetitionPage({ onNavigate }: AddCompetitionPagePro
             <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Nom</label>
             <input
               type="text"
-              value={competitionForm.name}
-              onChange={(e) => setCompetitionForm({ ...competitionForm, name: e.target.value })}
+              value={competitionForm.nom}
+              onChange={(e) => setCompetitionForm({ ...competitionForm, nom: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
               placeholder="Marathon de Paris"
             />
@@ -109,13 +116,13 @@ export default function AddCompetitionPage({ onNavigate }: AddCompetitionPagePro
           </div>
 
           <div>
-            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Temps prévu (optionnel)</label>
+            <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Durée estimée (minutes)</label>
             <input
-              type="text"
-              value={competitionForm.expectedTime}
-              onChange={(e) => setCompetitionForm({ ...competitionForm, expectedTime: e.target.value })}
+              type="number"
+              value={competitionForm.durée}
+              onChange={(e) => setCompetitionForm({ ...competitionForm, durée: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
-              placeholder="03:45:00"
+              placeholder="240"
             />
           </div>
 

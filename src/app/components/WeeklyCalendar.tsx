@@ -9,7 +9,7 @@ interface WeeklyCalendarProps {
 }
 
 // Même utilitaire que dans le Dashboard pour la cohérence
-const isSameDay = (date1: Date, date2: Date) => {
+const isSameDay = (date1: Date | string, date2: Date | string) => {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
   return (
@@ -19,14 +19,14 @@ const isSameDay = (date1: Date, date2: Date) => {
   );
 };
 
-export default function WeeklyCalendar({ 
-  sessions, 
-  competitions, 
-  selectedDate, 
-  onSelectDate 
+export default function WeeklyCalendar({
+  sessions,
+  competitions,
+  selectedDate,
+  onSelectDate
 }: WeeklyCalendarProps) {
   const days = [];
-  
+
   for (let i = -3; i <= 3; i++) {
     const date = new Date(selectedDate);
     date.setDate(selectedDate.getDate() + i);
@@ -48,7 +48,7 @@ export default function WeeklyCalendar({
         {days.map((date, index) => {
           const isSelected = isSameDay(date, selectedDate);
           const isToday = isSameDay(date, new Date());
-          
+
           const { hasSession, hasCompetition } = getEventsForDay(date);
           const dayName = dayNames[date.getDay()];
           const dayNumber = date.getDate();
@@ -57,27 +57,24 @@ export default function WeeklyCalendar({
             <button
               key={index}
               onClick={() => onSelectDate(date)}
-              className={`aspect-[4/5] flex flex-col items-center justify-center rounded-xl transition-all ${
-                isSelected
+              className={`aspect-[4/5] flex flex-col items-center justify-center rounded-xl transition-all ${isSelected
                   ? 'bg-gradient-to-br from-[#00F65C]/20 to-[#C1FB00]/20 border-2 border-[#00F65C]'
                   : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-              } ${isToday && !isSelected ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
+                } ${isToday && !isSelected ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
             >
-              <span className={`text-[10px] mb-0.5 ${
-                isSelected 
-                  ? 'text-gray-900 dark:text-white font-bold' 
+              <span className={`text-[10px] mb-0.5 ${isSelected
+                  ? 'text-gray-900 dark:text-white font-bold'
                   : 'text-gray-400 dark:text-gray-500'
-              }`}>
+                }`}>
                 {dayName}
               </span>
-              
-              <span className={`text-sm font-bold mb-1 ${
-                isSelected 
-                  ? 'text-gray-900 dark:text-white' 
+
+              <span className={`text-sm font-bold mb-1 ${isSelected
+                  ? 'text-gray-900 dark:text-white'
                   : isToday
-                  ? 'text-[#00F65C]'
-                  : 'text-gray-700 dark:text-gray-300'
-              }`}>
+                    ? 'text-[#00F65C]'
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}>
                 {dayNumber}
               </span>
 

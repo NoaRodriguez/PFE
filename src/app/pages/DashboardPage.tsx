@@ -10,7 +10,7 @@ interface DashboardPageProps {
 }
 
 // Fonction utilitaire pour comparer deux dates sans se soucier de l'heure
-const isSameDay = (date1: Date, date2: Date) => {
+const isSameDay = (date1: Date | string, date2: Date | string) => {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
   return (
@@ -21,8 +21,8 @@ const isSameDay = (date1: Date, date2: Date) => {
 };
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { userProfile, logout, sessions, competitions, dailyNutrition, getTodayNutrition, isDarkMode, toggleDarkMode } = useApp();
-  
+  const { userProfile, signOut, sessions, competitions, dailyNutrition, getTodayNutrition, isDarkMode, toggleDarkMode } = useApp();
+
   // État pour la date sélectionnée (initialisé à aujourd'hui)
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -52,14 +52,14 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const totalCarbs = dailyNutrition?.totalCarbs || 0;
   const totalFats = dailyNutrition?.totalFats || 0;
 
-  const proteinsPercentage = userProfile?.nutritionGoals.proteins 
-    ? Math.min((totalProteins / userProfile.nutritionGoals.proteins) * 100, 100) 
+  const proteinsPercentage = userProfile?.nutritionGoals.proteines
+    ? Math.min((totalProteins / userProfile.nutritionGoals.proteines) * 100, 100)
     : 0;
-  const carbsPercentage = userProfile?.nutritionGoals.carbs 
-    ? Math.min((totalCarbs / userProfile.nutritionGoals.carbs) * 100, 100) 
+  const carbsPercentage = userProfile?.nutritionGoals.glucides
+    ? Math.min((totalCarbs / userProfile.nutritionGoals.glucides) * 100, 100)
     : 0;
-  const fatsPercentage = userProfile?.nutritionGoals.fats 
-    ? Math.min((totalFats / userProfile.nutritionGoals.fats) * 100, 100) 
+  const fatsPercentage = userProfile?.nutritionGoals.lipides
+    ? Math.min((totalFats / userProfile.nutritionGoals.lipides) * 100, 100)
     : 0;
 
   const adviceOfTheDay = getAdviceOfTheDay();
@@ -90,7 +90,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 )}
               </button>
               <button
-                onClick={logout}
+                onClick={signOut}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
               >
                 <LogOut className="w-5 h-5 text-gray-900 dark:text-white" />
@@ -98,7 +98,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             </div>
           </div>
           <div>
-            <h1 className="text-gray-900 dark:text-white">Bonjour {userProfile?.name} 👋</h1>
+            <h1 className="text-gray-900 dark:text-white">Bonjour {userProfile?.prenom} 👋</h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Prêt à donner le meilleur de vous-même ?</p>
           </div>
         </div>
@@ -124,9 +124,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         </div>
 
         {/* Weekly Calendar Interactif */}
-        <WeeklyCalendar 
-          sessions={sessions} 
-          competitions={competitions} 
+        <WeeklyCalendar
+          sessions={sessions}
+          competitions={competitions}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
         />
@@ -135,17 +135,18 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         <div className="space-y-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3 capitalize">{getDayTitle()}</h2>
-            
+
             {selectedDayEvents.length > 0 ? (
               <div className="space-y-2.5">
                 {selectedDayEvents.map((event) => (
                   <div
                     key={`${event.type}-${event.id}`}
-                    className="p-3.5 rounded-xl"
+                    onClick={() => onNavigate(event.type === 'session' ? `edit-session:${event.id}` : `edit-competition:${event.id}`)}
+                    className="p-3.5 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
                     style={{
                       // ICI : On force le dégradé en style inline pour être sûr qu'il s'affiche
                       // 0.1 correspond à 10% d'opacité. Tu peux mettre 0.2 si tu veux que ce soit plus voyant.
-                      background: event.type === 'session' 
+                      background: event.type === 'session'
                         ? 'linear-gradient(90deg, rgba(0, 246, 92, 0.1) 0%, rgba(193, 251, 0, 0.1) 100%)' // Vert -> Jaune
                         : 'linear-gradient(90deg, rgba(193, 251, 0, 0.1) 0%, rgba(245, 123, 255, 0.1) 100%)' // Jaune -> Rose
                     }}
@@ -153,11 +154,11 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
-                          {event.type === 'session' ? event.title : event.name}
+                          {event.type === 'session' ? event.titre : event.nom}
                         </h4>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {event.type === 'session' 
-                            ? `${event.duration} min • ${event.sport}`
+                          {event.type === 'session'
+                            ? `${event.durée} min • ${event.sport}`
                             : `${event.distance} km • Compétition`
                           }
                         </p>
@@ -203,12 +204,12 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 <div className="flex justify-between mb-1.5">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Protéines</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {totalProteins.toFixed(0)}g / {userProfile?.nutritionGoals.proteins}g
+                    {totalProteins.toFixed(0)}g / {userProfile?.nutritionGoals.proteines}g
                   </span>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#F57BFF] to-[#F57BFF]/70 transition-all duration-500" 
+                  <div
+                    className="h-full bg-gradient-to-r from-[#F57BFF] to-[#F57BFF]/70 transition-all duration-500"
                     style={{ width: `${proteinsPercentage}%` }}
                   />
                 </div>
@@ -217,12 +218,12 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 <div className="flex justify-between mb-1.5">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Glucides</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {totalCarbs.toFixed(0)}g / {userProfile?.nutritionGoals.carbs}g
+                    {totalCarbs.toFixed(0)}g / {userProfile?.nutritionGoals.glucides}g
                   </span>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00] transition-all duration-500" 
+                  <div
+                    className="h-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00] transition-all duration-500"
                     style={{ width: `${carbsPercentage}%` }}
                   />
                 </div>
@@ -231,12 +232,12 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 <div className="flex justify-between mb-1.5">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Lipides</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {totalFats.toFixed(0)}g / {userProfile?.nutritionGoals.fats}g
+                    {totalFats.toFixed(0)}g / {userProfile?.nutritionGoals.lipides}g
                   </span>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#C1FB00] to-[#F57BFF] transition-all duration-500" 
+                  <div
+                    className="h-full bg-gradient-to-r from-[#C1FB00] to-[#F57BFF] transition-all duration-500"
                     style={{ width: `${fatsPercentage}%` }}
                   />
                 </div>
@@ -253,11 +254,14 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
         {/* Upcoming Competition */}
         {upcomingCompetitions.length > 0 && (
-          <div className="mt-4 bg-gradient-to-r from-[#00F65C]/10 via-[#C1FB00]/10 to-[#F57BFF]/10 rounded-2xl p-5 border border-[#00F65C]/20">
+          <div
+            onClick={() => onNavigate(`edit-competition:${upcomingCompetitions[0].id}`)}
+            className="mt-4 bg-gradient-to-r from-[#00F65C]/10 via-[#C1FB00]/10 to-[#F57BFF]/10 rounded-2xl p-5 border border-[#00F65C]/20 cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1.5">Prochaine compétition</h3>
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white">{upcomingCompetitions[0].name}</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-white">{upcomingCompetitions[0].nom}</h4>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                   {new Date(upcomingCompetitions[0].date).toLocaleDateString('fr-FR', {
                     day: 'numeric',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { User, Activity, Target, ChevronRight } from 'lucide-react';
 import { UserGoal, SportType, Gender } from '../types';
@@ -11,25 +11,55 @@ interface ProfilePageProps {
 export default function ProfilePage({ onNavigate }: ProfilePageProps) {
   const { userProfile, setUserProfile } = useApp();
   const [isEditing, setIsEditing] = useState(false);
-  
+
+  // Helper to calc age
+  const calculateAge = (dateString?: string): number => {
+    if (!dateString) return 0;
+    const today = new Date();
+    const birthDate = new Date(dateString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const currentAge = calculateAge(userProfile?.date_naissance);
+
   // On initialise les données du formulaire avec le profil existant
   const [formData, setFormData] = useState({
-    name: userProfile?.name || '',
-    age: userProfile?.age.toString() || '',
-    gender: userProfile?.gender || 'male' as Gender, // Nouveau champ
-    weight: userProfile?.weight.toString() || '',
-    height: userProfile?.height.toString() || '',
-    goals: userProfile?.goals || [] as UserGoal[],
+    prenom: userProfile?.prenom || '',
+    date_naissance: userProfile?.date_naissance || '',
+    gender: userProfile?.gender || 'male' as Gender,
+    poids: userProfile?.poids.toString() || '',
+    taille: userProfile?.taille.toString() || '',
+    objectifs: userProfile?.objectifs || [] as UserGoal[],
     sports: userProfile?.sports || [] as SportType[],
-    // customSports supprimé
-    trainingHoursPerWeek: userProfile?.trainingHoursPerWeek?.toString() || '',
+    frequence_entrainement: userProfile?.frequence_entrainement || '',
   });
+
+  // Sync state when profile loads (e.g. refresh)
+  useEffect(() => {
+    if (userProfile) {
+      setFormData({
+        prenom: userProfile.prenom || '',
+        date_naissance: userProfile.date_naissance || '',
+        gender: userProfile.gender || 'male',
+        poids: userProfile.poids.toString() || '',
+        taille: userProfile.taille.toString() || '',
+        objectifs: userProfile.objectifs || [],
+        sports: userProfile.sports || [],
+        frequence_entrainement: userProfile.frequence_entrainement || '',
+      });
+    }
+  }, [userProfile]);
 
   const goals = [
     { value: 'reprise' as UserGoal, label: 'Reprendre le sport' },
     { value: 'hygiene' as UserGoal, label: 'Avoir une bonne hygiène de vie' },
     { value: 'competition' as UserGoal, label: 'Préparer une compétition' },
-    { value: 'performance' as UserGoal, label: 'Améliorer mes perfs' }, // Mis à jour
+    { value: 'performance' as UserGoal, label: 'Améliorer mes perfs' },
     { value: 'perte-poids' as UserGoal, label: 'Perte de poids' },
   ];
 
@@ -45,9 +75,9 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
   const toggleGoal = (goal: UserGoal) => {
     setFormData(prev => ({
       ...prev,
-      goals: prev.goals.includes(goal)
-        ? prev.goals.filter(g => g !== goal)
-        : [...prev.goals, goal]
+      objectifs: prev.objectifs.includes(goal)
+        ? prev.objectifs.filter(g => g !== goal)
+        : [...prev.objectifs, goal]
     }));
   };
 
@@ -60,33 +90,34 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!userProfile) return;
 
-    const weight = parseFloat(formData.weight) || 0;
-    
-    // Calcul simplifié (à adapter selon tes règles métiers exactes)
-    const proteins = Math.round(weight * 1.8);
-    const carbs = Math.round(weight * 4);
-    const fats = Math.round(weight * 1);
+    const poidsNum = parseFloat(formData.poids) || 0;
 
-    setUserProfile({
-      name: formData.name,
-      age: parseInt(formData.age) || 0,
-      gender: formData.gender, // Sauvegarde du genre
-      weight: weight,
-      height: parseFloat(formData.height) || 0,
-      goals: formData.goals,
-      sports: formData.sports,
-      customSports: [], // Vide car supprimé
-      trainingHoursPerWeek: parseFloat(formData.trainingHoursPerWeek) || 0,
-      nutritionGoals: {
-        proteins,
-        carbs,
-        fats,
-      },
-    });
-    setIsEditing(false);
+    try {
+      await setUserProfile({
+        ...userProfile,
+        prenom: formData.prenom,
+        date_naissance: formData.date_naissance,
+        gender: formData.gender,
+        poids: poidsNum,
+        taille: parseFloat(formData.taille) || 0,
+        objectifs: formData.objectifs,
+        sports: formData.sports,
+        frequence_entrainement: formData.frequence_entrainement,
+        customSports: [],
+        nutritionGoals: {
+          proteines: 0, // Handled by AppContext
+          glucides: 0,
+          lipides: 0,
+        },
+      });
+      setIsEditing(false);
+    } catch (error: any) {
+      console.error('Failed to save profile:', error);
+      alert(`Erreur lors de la sauvegarde: ${error?.message || JSON.stringify(error)}`);
+    }
   };
 
   const getGoalLabel = (goal: UserGoal) => {
@@ -122,7 +153,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Prénom</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.name}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.prenom}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Genre</span>
@@ -130,17 +161,18 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     {userProfile?.gender === 'female' ? 'Femme' : 'Homme'}
                   </span>
                 </div>
+                {/* Display Birthday or Age? Original had Age. */}
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Âge</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.age} ans</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{currentAge} ans</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Poids</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.weight} kg</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.poids} kg</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Taille</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.height} cm</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.taille} cm</span>
                 </div>
               </div>
             </div>
@@ -166,7 +198,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Volume hebdo (moyen)</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.trainingHoursPerWeek}h / semaine</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{userProfile?.frequence_entrainement}h / semaine</span>
                 </div>
               </div>
             </div>
@@ -180,7 +212,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                 <h2 className="font-semibold text-lg text-gray-900 dark:text-white">Mes objectifs</h2>
               </div>
               <div className="space-y-2">
-                {userProfile?.goals.map((goal, idx) => (
+                {userProfile?.objectifs.map((goal, idx) => (
                   <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
                     <p className="text-sm text-gray-900 dark:text-white">{getGoalLabel(goal)}</p>
                   </div>
@@ -194,14 +226,14 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <h2 className="font-semibold text-lg text-gray-900 dark:text-white mb-4">Informations personnelles</h2>
               <p className="text-xs text-gray-400 mb-4 italic">Vous pourrez modifier ces informations plus tard.</p>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Prénom</label>
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={formData.prenom}
+                    onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
                   />
                 </div>
@@ -213,22 +245,20 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, gender: 'male' })}
-                      className={`flex-1 py-3 rounded-xl border-2 text-sm font-medium ${
-                        formData.gender === 'male'
-                          ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
-                          : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-500'
-                      }`}
+                      className={`flex-1 py-3 rounded-xl border-2 text-sm font-medium ${formData.gender === 'male'
+                        ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
+                        : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-500'
+                        }`}
                     >
                       Homme
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, gender: 'female' })}
-                      className={`flex-1 py-3 rounded-xl border-2 text-sm font-medium ${
-                        formData.gender === 'female'
-                          ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
-                          : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-500'
-                      }`}
+                      className={`flex-1 py-3 rounded-xl border-2 text-sm font-medium ${formData.gender === 'female'
+                        ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
+                        : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-500'
+                        }`}
                     >
                       Femme
                     </button>
@@ -237,12 +267,11 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Âge</label>
+                    <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Date de naissance</label>
                     <input
-                      type="number"
-                      min="0"
-                      value={formData.age}
-                      onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                      type="date"
+                      value={formData.date_naissance}
+                      onChange={(e) => setFormData({ ...formData, date_naissance: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
                     />
                   </div>
@@ -251,8 +280,8 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     <input
                       type="number"
                       min="0"
-                      value={formData.weight}
-                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                      value={formData.poids}
+                      onChange={(e) => setFormData({ ...formData, poids: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
                     />
                   </div>
@@ -262,18 +291,20 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <input
                     type="number"
                     min="0"
-                    value={formData.height}
-                    onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                    value={formData.taille}
+                    onChange={(e) => setFormData({ ...formData, taille: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
                   />
                 </div>
                 <div>
                   <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Heures sport / semaine (moyenne)</label>
                   <input
-                    type="number"
+                    type="number" // kept as number input but saved as string or we should use text input? "1-2" vs "5".
+                    // Types says string.
+                    // User might input 5.
                     min="0"
-                    value={formData.trainingHoursPerWeek}
-                    onChange={(e) => setFormData({ ...formData, trainingHoursPerWeek: e.target.value })}
+                    value={formData.frequence_entrainement}
+                    onChange={(e) => setFormData({ ...formData, frequence_entrainement: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
                   />
                 </div>
@@ -288,14 +319,13 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <button
                     key={goal.value}
                     onClick={() => toggleGoal(goal.value)}
-                    className={`w-full p-3 rounded-xl text-left transition-all flex items-center justify-between text-sm ${
-                      formData.goals.includes(goal.value)
-                        ? 'bg-gradient-to-r from-[#00F65C]/20 to-[#C1FB00]/20 border-2 border-[#00F65C] text-gray-900 dark:text-white'
-                        : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700 text-gray-900 dark:text-white'
-                    }`}
+                    className={`w-full p-3 rounded-xl text-left transition-all flex items-center justify-between text-sm ${formData.objectifs.includes(goal.value)
+                      ? 'bg-gradient-to-r from-[#00F65C]/20 to-[#C1FB00]/20 border-2 border-[#00F65C] text-gray-900 dark:text-white'
+                      : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700 text-gray-900 dark:text-white'
+                      }`}
                   >
                     <span>{goal.label}</span>
-                    {formData.goals.includes(goal.value) && <ChevronRight className="text-[#00F65C] w-5 h-5" />}
+                    {formData.objectifs.includes(goal.value) && <ChevronRight className="text-[#00F65C] w-5 h-5" />}
                   </button>
                 ))}
               </div>
@@ -309,11 +339,10 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <button
                     key={sport.value}
                     onClick={() => toggleSport(sport.value)}
-                    className={`p-3.5 rounded-xl transition-all text-center ${
-                      formData.sports.includes(sport.value)
-                        ? 'bg-gradient-to-br from-[#00F65C]/20 to-[#C1FB00]/20 border-2 border-[#00F65C]'
-                        : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700'
-                    }`}
+                    className={`p-3.5 rounded-xl transition-all text-center ${formData.sports.includes(sport.value)
+                      ? 'bg-gradient-to-br from-[#00F65C]/20 to-[#C1FB00]/20 border-2 border-[#00F65C]'
+                      : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700'
+                      }`}
                   >
                     <div className="text-2xl mb-1">{sport.icon}</div>
                     <div className="text-xs text-gray-900 dark:text-white">{sport.label}</div>

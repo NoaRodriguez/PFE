@@ -1,30 +1,14 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { 
-  UserProfile, 
-  TrainingSession, 
-  Competition, 
+import {
+  UserProfile,
+  TrainingSession,
+  Competition,
   DailyNutrition,
   ConsumedFood,
 } from '../types';
 import { ingredients } from '../data/ingredients';
+import { supabase } from '../../lib/supabase';
 
-// --- PROFIL PAR DÉFAUT (Pour connexion directe, sans calories) ---
-const DEFAULT_PROFILE: UserProfile = {
-  name: 'Utilisateur',
-  age: 0,
-  gender: 'male', // AJOUT ICI
-  weight: 0,
-  height: 0,
-  goals: [], 
-  sports: [],
-  customSports: [],
-  trainingHoursPerWeek: 0,
-  nutritionGoals: {
-    proteins: 0,
-    carbs: 0,
-    fats: 0
-  }
-};
 interface AppContextType {
   isLoggedIn: boolean;
   userProfile: UserProfile | null;
@@ -33,16 +17,19 @@ interface AppContextType {
   dailyNutrition: DailyNutrition | null;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
-  // login accepte maintenant un profil optionnel
-  login: (profile?: UserProfile) => void;
-  logout: () => void;
-  setUserProfile: (profile: UserProfile) => void;
-  addSession: (session: TrainingSession) => void;
-  updateSession: (id: string, session: TrainingSession) => void;
-  deleteSession: (id: string) => void;
-  addCompetition: (competition: Competition) => void;
-  updateCompetition: (id: string, competition: Competition) => void;
-  deleteCompetition: (id: string) => void;
+  // Auth methods
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, data: any) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+
+  // Data methods
+  setUserProfile: (profile: UserProfile) => Promise<void>;
+  addSession: (session: TrainingSession) => Promise<void>;
+  updateSession: (id: number, session: TrainingSession) => Promise<void>;
+  deleteSession: (id: number) => Promise<void>;
+  addCompetition: (competition: Competition) => Promise<void>;
+  updateCompetition: (id: number, competition: Competition) => Promise<void>;
+  deleteCompetition: (id: number) => Promise<void>;
   addConsumedFood: (food: ConsumedFood) => void;
   removeConsumedFood: (ingredientId: string) => void;
   getTodayNutrition: () => DailyNutrition;
@@ -72,58 +59,328 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const toggleDarkMode = () => setIsDarkMode((prev: boolean) => !prev);
 
-  // LOGIQUE DE CONNEXION MODIFIÉE
-  const login = (profile?: UserProfile) => {
-    if (profile) {
-      // Cas Connexion : On fournit un profil (même vide), on rentre direct
-      setUserProfileState(profile);
-    } else {
-      // Cas Inscription : On ne fournit rien, userProfile reste null.
-      // App.tsx détectera (isLoggedIn=true && userProfile=null) et affichera ProfileSetupPage.
+  // --- SUPABASE AUTH & DATA ---
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setIsLoggedIn(true);
+        loadUserData(session.user.id);
+      } else {
+        setIsLoggedIn(false);
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        setIsLoggedIn(true);
+        loadUserData(session.user.id);
+      } else {
+        setIsLoggedIn(false);
+        setUserProfileState(null);
+        setSessions([]);
+        setCompetitions([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadUserData = async (userId: string) => {
+    // 1. Load Profile
+    const { data: profileData, error: profileError } = await supabase
+      .from('profil_utilisateur')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    // 2. Load Macronutrients (Goals)
+    const { data: macroData } = await supabase
+      .from('macronutriment')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profileData) {
+      // Map SQL to App Type
+      const mappedProfile: UserProfile = {
+        id: profileData.id,
+        prenom: profileData.prenom,
+        date_naissance: profileData.date_naissance,
+        gender: profileData.genre as any,
+        poids: profileData.poids,
+        taille: profileData.taille,
+        objectifs: parseJsonSafe(profileData.objectifs),
+        sports: parseJsonSafe(profileData.sports),
+        customSports: [],
+        frequence_entrainement: profileData.frequence_entrainement,
+        nutritionGoals: {
+          proteines: macroData?.proteine || 0,
+          glucides: macroData?.glucide || 0,
+          lipides: macroData?.lipide || 0
+        }
+      };
+      setUserProfileState(mappedProfile);
+    } else if (profileError) {
+      console.error('Error fetching profile:', profileError);
     }
-    setIsLoggedIn(true);
+
+    // Load Sessions
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('seance')
+      .select('*')
+      .eq('id_utilisateur', userId)
+      .order('date', { ascending: false });
+
+    if (sessionData) {
+      const mappedSessions: TrainingSession[] = sessionData.map((s: any) => ({
+        id: s.id,
+        date: s.date, // ISO string
+        titre: s.titre,
+        sport: s.sport,
+        durée: s.durée,
+        type: s.type, // check valid enum?
+        description: s.description,
+        intensité: s.intensité,
+        période_journée: s.période_journée
+      }));
+      setSessions(mappedSessions);
+    }
+
+    // Load Competitions
+    const { data: compData, error: compError } = await supabase
+      .from('competition')
+      .select('*')
+      .eq('id_utilisateur', userId);
+
+    if (compData) {
+      const mappedCompetitions: Competition[] = compData.map((c: any) => ({
+        id: c.id,
+        date: c.date,
+        sport: c.sport,
+        durée: c.durée,
+        distance: c.distance,
+        intensité: c.intensité,
+        nom: c.titre || 'Competition'
+      }));
+      setCompetitions(mappedCompetitions);
+    }
   };
 
-  const logout = () => {
-    setIsLoggedIn(false);
-    setUserProfileState(null);
+  const parseJsonSafe = (input: string | any[] | null) => {
+    if (!input) return [];
+    if (Array.isArray(input)) return input;
+    try {
+      return JSON.parse(input);
+    } catch (e) {
+      return input.split(','); // Fallback
+    }
   };
 
-  const setUserProfile = (profile: UserProfile) => {
-    setUserProfileState(profile);
-    const today = new Date().toISOString().split('T')[0];
-    setDailyNutrition({
-      date: today,
-      consumed: [],
-      totalProteins: 0,
-      totalCarbs: 0,
-      totalFats: 0,
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string, data: any) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: data.username // meta data
+        }
+      }
+    });
+    return { error };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const setUserProfile = async (profile: UserProfile) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Upsert Profile
+    const profileUpdates = {
+      id: user.id,
+      prenom: profile.prenom,
+      poids: isNaN(Number(profile.poids)) ? null : Number(profile.poids),
+      taille: isNaN(Number(profile.taille)) ? null : Number(profile.taille),
+      objectifs: profile.objectifs,
+      sports: profile.sports,
+      frequence_entrainement: profile.frequence_entrainement,
+      genre: profile.gender,
+      date_naissance: profile.date_naissance,
+    };
+
+    const { error: profileError } = await supabase
+      .from('profil_utilisateur')
+      .upsert(profileUpdates);
+
+    // 2. Upsert Nutrition Goals (Macronutriment)
+    // Rule: Proteins = Weight * 0.8, Carbs = Weight * 4, Fats = Weight * 1.2
+    const weight = Number(profile.poids) || 0;
+
+    const macroUpdates = {
+      id: user.id,
+      date: new Date().toISOString(),
+      proteine: Math.round(weight * 0.8),
+      glucide: Math.round(weight * 4),
+      lipide: Math.round(weight * 1.2),
+    };
+
+    const { error: macroError } = await supabase
+      .from('macronutriment')
+      .upsert(macroUpdates);
+
+    if (profileError || macroError) {
+      console.error('Error updating profile/macros:', { profileError, macroError }, 'Payloads:', { profileUpdates, macroUpdates });
+      throw profileError || macroError;
+    }
+
+    // Update local state immediately with calculated macros
+    setUserProfileState({
+      ...profile,
+      nutritionGoals: {
+        proteines: macroUpdates.proteine,
+        glucides: macroUpdates.glucide,
+        lipides: macroUpdates.lipide
+      }
     });
   };
 
-  const addSession = (session: TrainingSession) => {
-    setSessions(prev => [...prev, session]);
+  const addSession = async (session: TrainingSession) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const row = {
+      id_utilisateur: user.id,
+      date: session.date, // ensure ISO string
+      sport: session.sport,
+      titre: session.titre,
+      type: session.type,
+      durée: session.durée,
+      description: session.description,
+      intensité: session.intensité,
+      période_journée: session.période_journée
+    };
+
+    const { data, error } = await supabase
+      .from('seance')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding session:', error);
+      return;
+    }
+
+    if (data) {
+      // Map back
+      const newSession: TrainingSession = {
+        ...session,
+        id: data.id
+      };
+      setSessions(prev => [newSession, ...prev]);
+    }
   };
 
-  const updateSession = (id: string, session: TrainingSession) => {
-    setSessions(prev => prev.map(s => s.id === id ? session : s));
+  const updateSession = async (id: number, session: TrainingSession) => {
+    const { error } = await supabase
+      .from('seance')
+      .update({
+        date: session.date,
+        sport: session.sport,
+        titre: session.titre,
+        type: session.type,
+        durée: session.durée,
+        description: session.description,
+        intensité: session.intensité,
+        période_journée: session.période_journée
+      })
+      .eq('id', id);
+
+    if (!error) {
+      setSessions(prev => prev.map(s => s.id === id ? session : s));
+    }
   };
 
-  const deleteSession = (id: string) => {
-    setSessions(prev => prev.filter(s => s.id !== id));
+  const deleteSession = async (id: number) => {
+    const { error } = await supabase.from('seance').delete().eq('id', id);
+    if (!error) {
+      setSessions(prev => prev.filter(s => s.id !== id));
+    }
   };
 
-  const addCompetition = (competition: Competition) => {
-    setCompetitions(prev => [...prev, competition]);
+  const addCompetition = async (competition: Competition) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const row = {
+      id_utilisateur: user.id,
+      date: competition.date,
+      sport: competition.sport,
+      durée: Math.round(competition.durée || 0),
+      distance: Math.round(competition.distance || 0),
+      intensité: Math.round(competition.intensité || 0)
+    };
+
+    const { data, error } = await supabase.from('competition').insert(row).select().single();
+
+    if (error) {
+      console.error('Error adding competition:', error, row);
+      return;
+    }
+
+    if (data) {
+      const newComp: Competition = {
+        ...competition,
+        id: data.id
+      };
+      setCompetitions(prev => [...prev, newComp]);
+    }
   };
 
-  const updateCompetition = (id: string, competition: Competition) => {
-    setCompetitions(prev => prev.map(c => c.id === id ? competition : c));
+  const updateCompetition = async (id: number, competition: Competition) => {
+    const updates = {
+      date: competition.date,
+      sport: competition.sport,
+      durée: Math.round(competition.durée || 0),
+      distance: Math.round(competition.distance || 0),
+      intensité: Math.round(competition.intensité || 0)
+    };
+
+    const { error } = await supabase.from('competition').update(updates).eq('id', id);
+
+    if (error) {
+      console.error('Error updating competition:', error, updates);
+    } else {
+      setCompetitions(prev => prev.map(c => c.id === id ? competition : c));
+    }
   };
 
-  const deleteCompetition = (id: string) => {
-    setCompetitions(prev => prev.filter(c => c.id !== id));
+  const deleteCompetition = async (id: number) => {
+    const { error } = await supabase.from('competition').delete().eq('id', id);
+    if (!error) {
+      setCompetitions(prev => prev.filter(c => c.id !== id));
+    }
   };
+
+  // --- NUTRITION (Keep Local or TODO Supabase?) ---
+  // Request didn't specify Nutrition table. 
+  // "Lecture : Charger sessions et competitions... Ecriture : addSession, updateSession... setUserProfile" 
+  // No mention of nutrition logic persistence except maybe in Profile (goals). 
+  // But DailyNutrition logic was local. I will keep it local or simple for now until requested.
+  // The user prompt: "Utiliser supabase... ... Lecture : Charger sessions et competitions... Ecriture ... addSession... setDescription... setUserProfile".
+  // Nutrition usage seems transient or not migrated yet.
 
   const getTodayNutrition = (): DailyNutrition => {
     const today = new Date().toISOString().split('T')[0];
@@ -144,13 +401,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addConsumedFood = (food: ConsumedFood) => {
     setDailyNutrition(prev => {
       if (!prev) return prev;
-      
       const newConsumed = [...prev.consumed, food];
-      
-      let totalProteins = 0;
-      let totalCarbs = 0;
-      let totalFats = 0;
-      
+      // Recalc logic... (simplified copy from original)
+      let totalProteins = 0; let totalCarbs = 0; let totalFats = 0;
       newConsumed.forEach((consumed) => {
         const ingredient = ingredients.find((i) => i.id === consumed.ingredientId);
         if (ingredient) {
@@ -159,31 +412,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
           totalFats += (ingredient.fats * consumed.quantity) / 100;
         }
       });
-      
-      return {
-        ...prev,
-        consumed: newConsumed,
-        totalProteins,
-        totalCarbs,
-        totalFats,
-      };
+      return { ...prev, consumed: newConsumed, totalProteins, totalCarbs, totalFats };
     });
   };
 
   const removeConsumedFood = (ingredientId: string) => {
     setDailyNutrition(prev => {
       if (!prev) return prev;
-      
       const index = prev.consumed.findIndex(item => item.ingredientId === ingredientId);
       if (index === -1) return prev;
-      
       const newConsumed = [...prev.consumed];
       newConsumed.splice(index, 1);
-      
-      let totalProteins = 0;
-      let totalCarbs = 0;
-      let totalFats = 0;
-      
+      // Recalc logic... 
+      let totalProteins = 0; let totalCarbs = 0; let totalFats = 0;
       newConsumed.forEach((consumed) => {
         const ingredient = ingredients.find((i) => i.id === consumed.ingredientId);
         if (ingredient) {
@@ -192,14 +433,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           totalFats += (ingredient.fats * consumed.quantity) / 100;
         }
       });
-      
-      return {
-        ...prev,
-        consumed: newConsumed,
-        totalProteins,
-        totalCarbs,
-        totalFats,
-      };
+      return { ...prev, consumed: newConsumed, totalProteins, totalCarbs, totalFats };
     });
   };
 
@@ -213,8 +447,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dailyNutrition,
         isDarkMode,
         toggleDarkMode,
-        login,
-        logout,
+        signIn,
+        signUp,
+        signOut,
         setUserProfile,
         addSession,
         updateSession,

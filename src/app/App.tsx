@@ -27,7 +27,7 @@ function AppContent() {
 
   // Handle edit pages with IDs
   if (currentPage.startsWith('edit-session:')) {
-    const sessionId = currentPage.split(':')[1];
+    const sessionId = parseInt(currentPage.split(':')[1], 10);
     return (
       <>
         <EditSessionPage sessionId={sessionId} onNavigate={setCurrentPage} />
@@ -37,7 +37,7 @@ function AppContent() {
   }
 
   if (currentPage.startsWith('edit-competition:')) {
-    const competitionId = currentPage.split(':')[1];
+    const competitionId = parseInt(currentPage.split(':')[1], 10);
     return (
       <>
         <EditCompetitionPage competitionId={competitionId} onNavigate={setCurrentPage} />

@@ -79,7 +79,7 @@ export default function TrackerPage({ onNavigate }: TrackerPageProps) {
                     stroke="url(#gradient-proteins)"
                     strokeWidth="8"
                     strokeDasharray={`${2 * Math.PI * 34}`}
-                    strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(totals.proteins / (userProfile?.nutritionGoals.proteins || 1), 1))}`}
+                    strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(totals.proteins / (userProfile?.nutritionGoals.proteines || 1), 1))}`}
                     strokeLinecap="round"
                   />
                   <defs>
@@ -92,7 +92,7 @@ export default function TrackerPage({ onNavigate }: TrackerPageProps) {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div>
                     <p className="text-base font-semibold text-gray-900 dark:text-white">{totals.proteins}g</p>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400">/ {userProfile?.nutritionGoals.proteins}g</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">/ {userProfile?.nutritionGoals.proteines}g</p>
                   </div>
                 </div>
               </div>
@@ -119,7 +119,7 @@ export default function TrackerPage({ onNavigate }: TrackerPageProps) {
                     stroke="url(#gradient-carbs)"
                     strokeWidth="8"
                     strokeDasharray={`${2 * Math.PI * 34}`}
-                    strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(totals.carbs / (userProfile?.nutritionGoals.carbs || 1), 1))}`}
+                    strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(totals.carbs / (userProfile?.nutritionGoals.glucides || 1), 1))}`}
                     strokeLinecap="round"
                   />
                   <defs>
@@ -132,7 +132,7 @@ export default function TrackerPage({ onNavigate }: TrackerPageProps) {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div>
                     <p className="text-base font-semibold text-gray-900 dark:text-white">{totals.carbs}g</p>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400">/ {userProfile?.nutritionGoals.carbs}g</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">/ {userProfile?.nutritionGoals.glucides}g</p>
                   </div>
                 </div>
               </div>
@@ -159,7 +159,7 @@ export default function TrackerPage({ onNavigate }: TrackerPageProps) {
                     stroke="url(#gradient-fats)"
                     strokeWidth="8"
                     strokeDasharray={`${2 * Math.PI * 34}`}
-                    strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(totals.fats / (userProfile?.nutritionGoals.fats || 1), 1))}`}
+                    strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(totals.fats / (userProfile?.nutritionGoals.lipides || 1), 1))}`}
                     strokeLinecap="round"
                   />
                   <defs>
@@ -172,7 +172,7 @@ export default function TrackerPage({ onNavigate }: TrackerPageProps) {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div>
                     <p className="text-base font-semibold text-gray-900 dark:text-white">{totals.fats}g</p>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400">/ {userProfile?.nutritionGoals.fats}g</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">/ {userProfile?.nutritionGoals.lipides}g</p>
                   </div>
                 </div>
               </div>
@@ -187,11 +187,10 @@ export default function TrackerPage({ onNavigate }: TrackerPageProps) {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all text-sm ${
-                selectedCategory === category
+              className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all text-sm ${selectedCategory === category
                   ? 'bg-gradient-to-r from-[#00F65C] to-[#C1FB00] text-[#292929] shadow-lg'
                   : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
-              }`}
+                }`}
             >
               {category}
             </button>

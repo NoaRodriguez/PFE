@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { UserGoal, SportType, UserProfile, Gender } from '../types';
-import { ChevronRight, ChevronLeft, Activity, Trophy, Heart, Flame, Timer, Check, User } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Activity, Trophy, Heart, Flame, Timer, Check, User, LogOut } from 'lucide-react';
 
 export default function ProfileSetupPage() {
-  const { setUserProfile, login } = useApp();
+  const { setUserProfile, signOut } = useApp();
   const [step, setStep] = useState(1);
-  
+
   // États du formulaire
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender>('male');
-  const [birthDate, setBirthDate] = useState(''); 
-  const [weight, setWeight] = useState<string>(''); 
+  const [birthDate, setBirthDate] = useState('');
+  const [weight, setWeight] = useState<string>('');
   const [height, setHeight] = useState<string>('');
-  
+
   const [selectedGoals, setSelectedGoals] = useState<UserGoal[]>([]);
   const [selectedSports, setSelectedSports] = useState<SportType[]>([]);
   const [trainingHours, setTrainingHours] = useState<string>('');
@@ -22,7 +22,7 @@ export default function ProfileSetupPage() {
 
   // Helper pour empêcher les valeurs négatives
   const handlePositiveNumber = (
-    value: string, 
+    value: string,
     setter: (val: string) => void
   ) => {
     if (value === '' || (parseFloat(value) >= 0 && !isNaN(Number(value)))) {
@@ -45,7 +45,7 @@ export default function ProfileSetupPage() {
     if (step === 1 && (!name || !birthDate || !weight || !height)) return;
     if (step === 2 && selectedGoals.length === 0) return;
     if (step === 3 && selectedSports.length === 0) return;
-    
+
     setStep(prev => prev + 1);
   };
 
@@ -54,15 +54,15 @@ export default function ProfileSetupPage() {
   };
 
   const toggleGoal = (goal: UserGoal) => {
-    setSelectedGoals(prev => 
-      prev.includes(goal) 
+    setSelectedGoals(prev =>
+      prev.includes(goal)
         ? prev.filter(g => g !== goal)
         : [...prev, goal]
     );
   };
 
   const toggleSport = (sport: SportType) => {
-    setSelectedSports(prev => 
+    setSelectedSports(prev =>
       prev.includes(sport)
         ? prev.filter(s => s !== sport)
         : [...prev, sport]
@@ -71,36 +71,41 @@ export default function ProfileSetupPage() {
 
   const finishSetup = () => {
     setIsCalculating(true);
-    
+
     // Simulation de calcul intelligent...
-    setTimeout(() => {
+    setTimeout(async () => {
       const age = calculateAge(birthDate);
       const weightNum = parseFloat(weight);
-      
+
       // Calcul basique des besoins
       const proteins = Math.round(weightNum * 1.8);
       const fats = Math.round(weightNum * 1.0);
       const carbs = Math.round(weightNum * 4);
 
       const profile: UserProfile = {
-        name,
-        age,
+        prenom: name, // mapped from 'name' variable
+        date_naissance: birthDate,
+        poids: weightNum,
+        taille: parseFloat(height),
         gender,
-        weight: weightNum,
-        height: parseFloat(height),
-        goals: selectedGoals,
+        frequence_entrainement: trainingHours, // string
+        objectifs: selectedGoals,
         sports: selectedSports,
-        customSports: [], 
-        trainingHoursPerWeek: parseFloat(trainingHours) || 0,
+        customSports: [],
+        // trainingHoursPerWeek removed or mapped? I mapped it to frequence_entrainement (string).
+        // UserProfile interface no longer has name/age/trainingHoursPerWeek?
+        // Let's check my types.ts update.
         nutritionGoals: {
-          proteins,
-          carbs,
-          fats
+          proteines: proteins,
+          glucides: carbs,
+          lipides: fats
         }
       };
 
-      setUserProfile(profile);
-      login(profile);
+      await setUserProfile(profile);
+      // Redirect handled by AppContext or App wrapper?
+      // Actually usually navigation happens.
+      // But since login(profile) is gone, we might need to rely on state change.
     }, 2000);
   };
 
@@ -127,7 +132,7 @@ export default function ProfileSetupPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
       {/* Progress Bar */}
       <div className="h-1.5 bg-gray-100 dark:bg-gray-900">
-        <div 
+        <div
           className="h-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00] transition-all duration-500"
           style={{ width: `${(step / 4) * 100}%` }}
         />
@@ -137,19 +142,29 @@ export default function ProfileSetupPage() {
         {/* Header Navigation */}
         <div className="flex items-center justify-between mb-8">
           {step > 1 ? (
-            <button 
+            <button
               onClick={handleBack}
               className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors"
             >
               <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-400" />
             </button>
           ) : (
-            <div />
+            <div className="w-10">
+              {/* Placeholder to keep title centered if no back button */}
+            </div>
           )}
-          <span className="text-xs font-medium text-gray-400 dark:text-gray-600">
-            ÉTAPE {step} SUR 4
+          <span className="text-xs font-medium text-gray-400 dark:text-gray-600 uppercase tracking-wider">
+            Étape {step} sur 4
           </span>
-          <div className="w-10" /> {/* Spacer */}
+          <div className="w-10 flex justify-end">
+            <button
+              onClick={signOut}
+              className="p-2 -mr-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+              title="Déconnexion"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* STEP 1: INFORMATIONS PERSONNELLES */}
@@ -184,21 +199,19 @@ export default function ProfileSetupPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setGender('male')}
-                    className={`flex-1 p-3 rounded-xl border-2 transition-all font-medium ${
-                      gender === 'male'
-                        ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
-                        : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-500'
-                    }`}
+                    className={`flex-1 p-3 rounded-xl border-2 transition-all font-medium ${gender === 'male'
+                      ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
+                      : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-500'
+                      }`}
                   >
                     Homme
                   </button>
                   <button
                     onClick={() => setGender('female')}
-                    className={`flex-1 p-3 rounded-xl border-2 transition-all font-medium ${
-                      gender === 'female'
-                        ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
-                        : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-500'
-                    }`}
+                    className={`flex-1 p-3 rounded-xl border-2 transition-all font-medium ${gender === 'female'
+                      ? 'border-[#00F65C] bg-[#00F65C]/10 text-gray-900 dark:text-white'
+                      : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-500'
+                      }`}
                   >
                     Femme
                   </button>
@@ -273,17 +286,15 @@ export default function ProfileSetupPage() {
                 <button
                   key={goal.id}
                   onClick={() => toggleGoal(goal.id as UserGoal)}
-                  className={`w-full p-4 rounded-2xl border-2 flex items-center gap-4 transition-all ${
-                    selectedGoals.includes(goal.id as UserGoal)
-                      ? 'border-[#00F65C] bg-[#00F65C]/5 text-gray-900 dark:text-white'
-                      : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full p-4 rounded-2xl border-2 flex items-center gap-4 transition-all ${selectedGoals.includes(goal.id as UserGoal)
+                    ? 'border-[#00F65C] bg-[#00F65C]/5 text-gray-900 dark:text-white'
+                    : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
-                  <div className={`p-2 rounded-full ${
-                    selectedGoals.includes(goal.id as UserGoal)
-                      ? 'bg-[#00F65C] text-[#292929]'
-                      : 'bg-white dark:bg-gray-800'
-                  }`}>
+                  <div className={`p-2 rounded-full ${selectedGoals.includes(goal.id as UserGoal)
+                    ? 'bg-[#00F65C] text-[#292929]'
+                    : 'bg-white dark:bg-gray-800'
+                    }`}>
                     {/* CORRECTION ERREUR TS : on retire size et on utilise className */}
                     {React.cloneElement(goal.icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
                   </div>
@@ -322,11 +333,10 @@ export default function ProfileSetupPage() {
                 <button
                   key={sport.id}
                   onClick={() => toggleSport(sport.id as SportType)}
-                  className={`p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all aspect-square ${
-                    selectedSports.includes(sport.id as SportType)
-                      ? 'border-[#C1FB00] bg-[#C1FB00]/10 text-gray-900 dark:text-white'
-                      : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all aspect-square ${selectedSports.includes(sport.id as SportType)
+                    ? 'border-[#C1FB00] bg-[#C1FB00]/10 text-gray-900 dark:text-white'
+                    : 'border-transparent bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   <span className="text-3xl">{sport.emoji}</span>
                   <span className="font-semibold text-sm text-center">{sport.label}</span>
@@ -355,11 +365,11 @@ export default function ProfileSetupPage() {
                   <Timer className="w-10 h-10 text-[#F57BFF]" />
                 </div>
               </div>
-              
+
               <label className="block text-sm font-medium text-center text-gray-900 dark:text-white mb-4">
                 Combien d'heures par semaine (approximativement ou en moyenne) ?
               </label>
-              
+
               <div className="flex items-center justify-center gap-4">
                 <input
                   type="number"

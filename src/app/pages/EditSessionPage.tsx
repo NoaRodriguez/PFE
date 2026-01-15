@@ -4,21 +4,24 @@ import { ArrowLeft } from 'lucide-react';
 import { SportType, SessionType, TrainingSession } from '../types';
 
 interface EditSessionPageProps {
-  sessionId: string;
+  sessionId: number; // ID is usually number/bigint in Supabase now
   onNavigate: (page: string) => void;
 }
+
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPageProps) {
   const { sessions, updateSession, deleteSession } = useApp();
   const session = sessions.find(s => s.id === sessionId);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [sessionForm, setSessionForm] = useState({
     date: session ? new Date(session.date).toISOString().split('T')[0] : '',
-    title: session?.title || '',
+    titre: session?.titre || '',
     sport: session?.sport || '',
-    duration: session?.duration.toString() || '',
+    durée: session?.durée.toString() || '',
     type: session?.type || '',
-    notes: session?.notes || '',
+    description: session?.description || '',
   });
 
   const sports = [
@@ -38,29 +41,43 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
     { value: 'interval', label: 'Interval' },
   ];
 
-  const handleSubmit = () => {
-    if (!sessionForm.date || !sessionForm.title || !sessionForm.sport || !sessionForm.duration || !sessionForm.type) {
+  const handleSubmit = async () => {
+    if (!sessionForm.date || !sessionForm.titre || !sessionForm.sport || !sessionForm.durée || !sessionForm.type) {
       alert('Veuillez remplir tous les champs obligatoires');
       return;
     }
-    
-    updateSession(sessionId, {
-      id: sessionId,
-      date: new Date(sessionForm.date),
-      title: sessionForm.title,
-      sport: sessionForm.sport as SportType,
-      duration: parseInt(sessionForm.duration),
-      type: sessionForm.type as SessionType,
-      notes: sessionForm.notes,
-    });
-    
-    onNavigate('calendar');
+
+    try {
+      await updateSession(sessionId, {
+        id: sessionId,
+        date: new Date(sessionForm.date).toISOString(),
+        titre: sessionForm.titre,
+        sport: sessionForm.sport as SportType,
+        durée: parseInt(sessionForm.durée),
+        type: sessionForm.type as SessionType,
+        description: sessionForm.description,
+        intensité: session?.intensité || 'moyenne',
+        période_journée: session?.période_journée || 'soir'
+      });
+
+      onNavigate('calendar');
+    } catch (error) {
+      console.error('Error updating session:', error);
+      alert('Erreur lors de la modification de la séance');
+    }
   };
 
-  const handleDelete = () => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) {
-      deleteSession(sessionId);
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteSession(sessionId);
       onNavigate('calendar');
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      alert('Erreur lors de la suppression de la séance');
     }
   };
 
@@ -101,8 +118,8 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
             <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Titre</label>
             <input
               type="text"
-              value={sessionForm.title}
-              onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
+              value={sessionForm.titre}
+              onChange={(e) => setSessionForm({ ...sessionForm, titre: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
               placeholder="Ex: Séance d'entraînement"
             />
@@ -140,8 +157,8 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
             <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Durée (minutes)</label>
             <input
               type="number"
-              value={sessionForm.duration}
-              onChange={(e) => setSessionForm({ ...sessionForm, duration: e.target.value })}
+              value={sessionForm.durée}
+              onChange={(e) => setSessionForm({ ...sessionForm, durée: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C]"
               placeholder="60"
             />
@@ -150,8 +167,8 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
           <div>
             <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">Description / Notes (optionnel)</label>
             <textarea
-              value={sessionForm.notes}
-              onChange={(e) => setSessionForm({ ...sessionForm, notes: e.target.value })}
+              value={sessionForm.description}
+              onChange={(e) => setSessionForm({ ...sessionForm, description: e.target.value })}
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F65C] min-h-[100px] resize-none"
               placeholder="Ex: Séance intense avec intervalles courts..."
             />
@@ -159,7 +176,7 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
 
           <div className="flex gap-3 pt-4">
             <button
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               className="flex-1 bg-red-500 text-white py-4 rounded-xl hover:bg-red-600 transition-all text-base font-medium shadow-lg"
             >
               Supprimer
@@ -173,6 +190,16 @@ export default function EditSessionPage({ sessionId, onNavigate }: EditSessionPa
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer la séance"
+        message="Êtes-vous sûr de vouloir supprimer cette séance ? Cette action est irréversible."
+        confirmText="Supprimer"
+        isDangerous={true}
+      />
     </div>
   );
 }
