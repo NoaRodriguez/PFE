@@ -296,7 +296,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateSession = async (session: TrainingSession) => {
     // On récupère l'ID directement depuis l'objet session
     const id = session.id;
-    
+
     const { error } = await supabase
       .from('seance')
       .update({

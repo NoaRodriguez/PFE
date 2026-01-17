@@ -15,15 +15,15 @@ export default function AdvicePage({ onNavigate }: AdvicePageProps) {
   );
 
   const getGoalAdvice = () => {
-    switch (userProfile?.goals?.[0]) {
+    switch (userProfile?.objectifs?.[0]) {
       case 'reprise':
         return "Pour reprendre le sport en douceur, privilégiez une alimentation équilibrée avec des glucides complexes pour l'énergie et des protéines pour la récupération.";
       case 'hygiene':
         return "Une alimentation variée et équilibrée est la clé. Mangez beaucoup de fruits et légumes, des protéines de qualité et des bonnes graisses.";
       case 'competition':
         return "En préparation de compétition, augmentez progressivement votre apport en glucides les jours précédant l'épreuve (carb loading).";
-      case 'sante':
-        return "Maintenez une alimentation équilibrée avec suffisamment de fruits, légumes, protéines maigres et glucides complexes.";
+      case 'performance':
+        return "Pour la performance, assurez-vous de consommer suffisamment de glucides pour l'énergie et des protéines pour la réparation musculaire.";
       case 'perte-poids':
         return "Pour la perte de poids, créez un déficit calorique modéré tout en maintenant un apport suffisant en protéines pour préserver votre masse musculaire.";
       default:
