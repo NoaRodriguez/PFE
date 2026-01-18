@@ -77,6 +77,10 @@ export interface Ingredient {
   carbs: number;
   fats: number;
   category: string;
+  // --- NOUVEAUX CHAMPS (Optionnels pour ne pas casser l'existant) ---
+  calories?: number;
+  image?: string;
+  type?: 'protein' | 'carb' | 'fat' | 'fiber';
 }
 
 export interface ConsumedFood {
