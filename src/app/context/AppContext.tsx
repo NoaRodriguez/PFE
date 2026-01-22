@@ -169,6 +169,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }));
       setCompetitions(mappedCompetitions);
     }
+
+
   };
 
   const parseJsonSafe = (input: string | any[] | null) => {

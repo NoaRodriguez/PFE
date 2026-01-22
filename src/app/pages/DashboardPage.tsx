@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useWeeklyAdvice } from '../hooks/useWeeklyAdvice';
 import { Calendar, Activity, LogOut, Moon, Sun, Lightbulb, Trophy } from 'lucide-react';
 import { getAdviceOfTheDay } from '../data/nutritionAdvices';
 import WeeklyCalendar from '../components/WeeklyCalendar';
@@ -22,6 +23,9 @@ const isSameDay = (date1: Date | string, date2: Date | string) => {
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const { userProfile, signOut, sessions, competitions, dailyNutrition, getTodayNutrition, isDarkMode, toggleDarkMode } = useApp();
+
+  // Trigger weekly advice generation check
+  useWeeklyAdvice(userProfile?.id);
 
   // État pour la date sélectionnée (initialisé à aujourd'hui)
   const [selectedDate, setSelectedDate] = useState(new Date());

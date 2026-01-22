@@ -1,0 +1,4 @@
+openai
+supabase
+pypdf2
+python-dotenv

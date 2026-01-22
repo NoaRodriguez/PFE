@@ -1,14 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useApp } from '../context/AppContext';
 import PageHeader from '../components/PageHeader';
 import { nutritionCategories, dailyTip } from '../data/nutritionCategories';
 import { X, ArrowRight, BookOpen, Clock, Flame, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { userProfile } = useApp();
   const [showTip, setShowTip] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [dailyAdvice, setDailyAdvice] = useState<{ id: string, conseil: string } | null>(null);
+  const [isLoadingAdvice, setIsLoadingAdvice] = useState(false);
+
+  useEffect(() => {
+    const fetchAdvice = async () => {
+      if (!userProfile?.id) return;
+      setIsLoadingAdvice(true);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('conseil_semaine')
+        .select('id, conseil') // Assuming column is 'conseil' based on previous context
+        .eq('id_utilisateur', userProfile.id)
+        .gte('date_creation', today.toISOString())
+        // Actually, user explicitly asked for logic in hook: .gte('date_creation', today.toISOString()). 
+        // I should use the same here.
+        .maybeSingle();
+        
+      if (data) {
+        setDailyAdvice(data);
+      }
+      setIsLoadingAdvice(false);
+    };
+
+    fetchAdvice();
+  }, [userProfile?.id]);
 
   const selectedCategory = nutritionCategories.find(c => c.id === selectedCategoryId);
+  // dailyTip fallback or integration? User said "affichage ... par rapport a ce qu'il y a dans la base".
+  // The DB content is just text "conseil". accessing title/summary might require parsing or AI format.
+  // The AI output format was:
+  // 1. Analyse...
+  // 2. Calendrier...
+  // ...
+  // It's a long markdown string.
+  // I should probably display it parsed or just raw for now in the modal.
+  // For the Card preview, I might need a generic title or "Conseil de la semaine".
+  
   const dailyCategory = nutritionCategories.find(c => c.id === dailyTip.categoryLink);
 
   return (
@@ -29,18 +69,18 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
             <div className="relative z-10">
                  <div className="flex items-center gap-2 mb-3">
                     <span className="bg-[#C1FB00] text-black px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(193,251,0,0.4)]">
-                      Tip du jour
+                      Conseil de la Semaine
                     </span>
                  </div>
                  <h3 className="text-xl font-bold text-white mb-2">
-                    {dailyTip.title}
+                    {isLoadingAdvice ? "Chargement..." : (dailyAdvice ? "Vote Stratégie Hebdo" : "Génération en cours...")}
                  </h3>
                  <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">
-                    {dailyTip.summary.replace(/\*\*/g, '')}
+                    {dailyAdvice ? dailyAdvice.conseil.substring(0, 150) + "..." : "Nous préparons votre programme nutritionnel personnalisé..."}
                  </p>
                  
                  <button className="mt-4 flex items-center gap-2 text-xs text-[#C1FB00] font-bold uppercase tracking-wider bg-white/5 border border-white/10 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md">
-                    Lire la suite <ArrowRight className="w-3 h-3" />
+                    {dailyAdvice ? "Voir ma stratégie" : "Patientez..."} <ArrowRight className="w-3 h-3" />
                  </button>
             </div>
         </div>
@@ -153,13 +193,15 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                 </h2>
                 
                 <div className="bg-[#1A1A1A]/80 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl">
-                    <p className="text-xl font-medium text-white mb-6 leading-relaxed border-b border-white/10 pb-6">
-                       {dailyTip.summary.replace(/\*\*/g, '')}
-                    </p>
-                    <div 
-                        className="text-gray-300 space-y-5 leading-relaxed text-lg"
-                        dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
-                    />
+                    {dailyAdvice ? (
+                      <div className="text-gray-300 space-y-5 leading-relaxed text-lg whitespace-pre-wrap">
+                        {dailyAdvice.conseil}
+                      </div>
+                    ) : (
+                      <div className="text-gray-300">
+                        {dailyTip.longContent}
+                      </div>
+                    )}
                 </div>
              </div>
 
