@@ -1,93 +1,101 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { useApp } from '../context/AppContext';
+import React, { useState } from 'react';
 import PageHeader from '../components/PageHeader';
-import { nutritionCategories, dailyTip } from '../data/nutritionCategories';
-import { X, ArrowRight, BookOpen, Clock, Flame, ChevronRight } from 'lucide-react';
+import { nutritionCategories, dailyTip, weeklyTip } from '../data/nutritionCategories';
+import { 
+  ArrowLeft, ArrowRight, BookOpen, Clock, Flame, ChevronRight, 
+  Drumstick, Fish, Egg, Wheat, Carrot, Apple, Leaf, Milk, Droplets, Utensils,
+  Zap
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const getIngredientIcon = (name: string) => {
+  const lower = name.toLowerCase();
+  if (lower.includes('poulet') || lower.includes('dinde') || lower.includes('viande') || lower.includes('boeuf')) return Drumstick;
+  if (lower.includes('poisson') || lower.includes('thon') || lower.includes('saumon') || lower.includes('sardine') || lower.includes('maquereau')) return Fish;
+  if (lower.includes('oeuf')) return Egg;
+  if (lower.includes('riz') || lower.includes('pates') || lower.includes('pâtes') || lower.includes('pain') || lower.includes('avoine') || lower.includes('quinoa') || lower.includes('blé')) return Wheat;
+  if (lower.includes('lait') || lower.includes('fromage') || lower.includes('yaourt') || lower.includes('whey')) return Milk;
+  if (lower.includes('carotte') || lower.includes('brocoli') || lower.includes('légume') || lower.includes('epinard') || lower.includes('concombre')) return Carrot;
+  if (lower.includes('pomme') || lower.includes('banane') || lower.includes('fruit') || lower.includes('datte') || lower.includes('citron')) return Apple;
+  if (lower.includes('huile') || lower.includes('eau')) return Droplets;
+  if (lower.includes('avocat') || lower.includes('noix') || lower.includes('amande') || lower.includes('chia') || lower.includes('tofu')) return Leaf;
+  return Utensils;
+};
+
 export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { userProfile } = useApp();
   const [showTip, setShowTip] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [dailyAdvice, setDailyAdvice] = useState<{ id: string, conseil: string } | null>(null);
-  const [isLoadingAdvice, setIsLoadingAdvice] = useState(false);
-
-  useEffect(() => {
-    const fetchAdvice = async () => {
-      if (!userProfile?.id) return;
-      setIsLoadingAdvice(true);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const { data, error } = await supabase
-        .from('conseil_semaine')
-        .select('id, conseil') // Assuming column is 'conseil' based on previous context
-        .eq('id_utilisateur', userProfile.id)
-        .gte('date_creation', today.toISOString())
-        // Actually, user explicitly asked for logic in hook: .gte('date_creation', today.toISOString()). 
-        // I should use the same here.
-        .maybeSingle();
-        
-      if (data) {
-        setDailyAdvice(data);
-      }
-      setIsLoadingAdvice(false);
-    };
-
-    fetchAdvice();
-  }, [userProfile?.id]);
 
   const selectedCategory = nutritionCategories.find(c => c.id === selectedCategoryId);
-  // dailyTip fallback or integration? User said "affichage ... par rapport a ce qu'il y a dans la base".
-  // The DB content is just text "conseil". accessing title/summary might require parsing or AI format.
-  // The AI output format was:
-  // 1. Analyse...
-  // 2. Calendrier...
-  // ...
-  // It's a long markdown string.
-  // I should probably display it parsed or just raw for now in the modal.
-  // For the Card preview, I might need a generic title or "Conseil de la semaine".
-  
   const dailyCategory = nutritionCategories.find(c => c.id === dailyTip.categoryLink);
 
   return (
-    <div className="pb-24 px-4 max-w-md mx-auto min-h-screen bg-gray-50 dark:bg-gray-950 overflow-x-hidden">
+    <div className="pb-24 px-4 max-w-md mx-auto min-h-screen bg-slate-950 text-white overflow-x-hidden">
       
       <PageHeader title="Centre Nutrition" subtitle="Performance & Santé" />
 
-      <div className="space-y-8 relative z-0">
+      <div className="space-y-8 mt-4 relative z-0">
         
-        {/* --- 1. CONSEIL DU JOUR --- */}
+        {/* --- 1. CONSEIL SEMAINE --- */}
+        <div className="relative overflow-hidden rounded-[2rem] bg-slate-900 border border-slate-800 p-6 shadow-2xl group">
+           {/* Glow Vert plus présent */}
+           <div className="absolute -top-10 -right-10 w-48 h-48 bg-[#00F65C] opacity-20 blur-[80px] rounded-full pointer-events-none group-hover:opacity-30 transition-opacity duration-500" />
+           
+           <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                 <weeklyTip.icon className="w-5 h-5 text-[#00F65C]" />
+                 <span className="text-xs font-bold uppercase tracking-widest text-[#00F65C] bg-[#00F65C]/10 px-2 py-1 rounded">
+                   {weeklyTip.subtitle}
+                 </span>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-white mb-3 leading-tight">
+                 {weeklyTip.title}
+              </h2>
+              <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                 {weeklyTip.content}
+              </p>
+
+              <div className="flex items-center gap-2 text-xs text-slate-300 font-medium bg-slate-800 w-fit px-3 py-2 rounded-xl border border-slate-700/50 shadow-sm">
+                 Objectif : Régularité
+              </div>
+           </div>
+        </div>
+
+        {/* --- 2. CONSEIL DU JOUR --- */}
         <div 
           onClick={() => setShowTip(true)}
-          className="relative overflow-hidden rounded-[23px] bg-[#121212] border border-gray-800 p-6 text-white shadow-xl cursor-pointer group active:scale-[0.98] transition-transform z-0"
+          className="relative overflow-hidden rounded-[2rem] bg-slate-900 border border-slate-800 p-6 shadow-xl cursor-pointer group active:scale-[0.98] transition-all hover:border-[#C1FB00]/30"
         >
-            {/* Fond SOMA Trouble */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#00F65C]/20 via-transparent to-[#F57BFF]/20 opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none blur-xl" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#C1FB00] opacity-10 blur-[60px] rounded-full pointer-events-none group-hover:opacity-25 transition-opacity duration-500" />
             
             <div className="relative z-10">
                  <div className="flex items-center gap-2 mb-3">
-                    <span className="bg-[#C1FB00] text-black px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(193,251,0,0.4)]">
-                      Conseil de la Semaine
+                    <div className="bg-[#C1FB00]/10 p-2 rounded-lg border border-[#C1FB00]/20">
+                        <Zap className="w-4 h-4 text-[#C1FB00]" />
+                    </div>
+                    <span className="text-[#C1FB00] text-xs font-bold uppercase tracking-widest">
+                      Conseil du jour
                     </span>
                  </div>
-                 <h3 className="text-xl font-bold text-white mb-2">
-                    {isLoadingAdvice ? "Chargement..." : (dailyAdvice ? "Vote Stratégie Hebdo" : "Génération en cours...")}
+
+                 <h3 className="text-xl font-bold text-white mb-2 leading-tight">
+                    {dailyTip.title}
                  </h3>
-                 <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">
-                    {dailyAdvice ? dailyAdvice.conseil.substring(0, 150) + "..." : "Nous préparons votre programme nutritionnel personnalisé..."}
+                 
+                 <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                    {dailyTip.summary.replace(/\*\*/g, '')}
                  </p>
                  
-                 <button className="mt-4 flex items-center gap-2 text-xs text-[#C1FB00] font-bold uppercase tracking-wider bg-white/5 border border-white/10 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md">
-                    {dailyAdvice ? "Voir ma stratégie" : "Patientez..."} <ArrowRight className="w-3 h-3" />
+                 <button className="flex items-center gap-2 text-xs text-[#C1FB00] font-bold uppercase tracking-wider bg-[#C1FB00]/10 border border-[#C1FB00]/20 px-4 py-2.5 rounded-xl group-hover:bg-[#C1FB00]/20 transition-colors">
+                    Lire la suite <ArrowRight className="w-3 h-3" />
                  </button>
             </div>
         </div>
 
-        {/* --- 2. LISTE DES PILIERS (Grandes Cartes) --- */}
+        {/* --- 3. LISTE DES PILIERS --- */}
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 pl-1 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-white mb-4 pl-1 flex items-center gap-2">
             Les Piliers de la Nutrition
           </h3>
           
@@ -97,60 +105,79 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                 key={category.id}
                 onClick={() => setSelectedCategoryId(category.id)}
                 whileTap={{ scale: 0.98 }}
-                className="cursor-pointer relative rounded-[2rem] bg-[#1A1A1A] border border-gray-800 z-10 overflow-hidden shadow-lg group"
+                className="cursor-pointer relative rounded-[2rem] bg-slate-900 border border-slate-800 z-10 overflow-hidden shadow-lg group hover:border-slate-700 transition-all duration-300"
+                // On ajoute une bordure colorée au survol via style inline pour la couleur dynamique
+                style={{ borderColor: 'transparent' }} 
               >
-                  {/* Background SOMA Style */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-10 transition-opacity group-hover:opacity-20`} />
+                  {/* Background Coloré Subtil */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-5 transition-opacity group-hover:opacity-15`} />
                   
+                  {/* Bordure colorée au survol simulée */}
+                  <div 
+                    className="absolute inset-0 border-2 border-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{ borderColor: `${category.themeColor}40` }} // 40 = transparence
+                  />
+
                   <div className="relative p-6 z-10">
-                    
-                    {/* Header: Icon + Title */}
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-4">
-                            <span className="text-4xl p-3 bg-white/5 rounded-2xl backdrop-blur-sm border border-white/5 shadow-inner">
-                                {category.icon}
+                            {/* Icône avec fond coloré très léger */}
+                            <span 
+                                className="text-3xl p-3 rounded-2xl border border-white/5 shadow-sm transition-transform group-hover:scale-105"
+                                style={{ backgroundColor: `${category.themeColor}10` }}
+                            >
+                                <category.icon 
+                                    className="w-8 h-8" 
+                                    style={{ color: category.themeColor }} 
+                                    strokeWidth={1.5} 
+                                />
                             </span>
                             <div>
-                                <h4 className="font-bold text-xl text-white leading-tight">
+                                <h4 className="font-bold text-lg text-white leading-tight group-hover:text-white/90">
                                     {category.title}
                                 </h4>
-                                <span className="text-[10px] font-bold tracking-widest uppercase opacity-90" style={{ color: category.themeColor }}>
+                                <span 
+                                    className="text-[10px] font-bold tracking-widest uppercase opacity-90" 
+                                    style={{ color: category.themeColor }}
+                                >
                                     {category.subtitle}
                                 </span>
                             </div>
                         </div>
-                        {/* Chevron */}
-                        <div className="p-2 bg-white/5 rounded-full text-gray-500 group-hover:bg-white/10 transition-colors">
+                        <div className="p-2 bg-slate-800 rounded-full text-slate-500 group-hover:text-white transition-colors">
                              <ChevronRight className="w-5 h-5" />
                         </div>
                     </div>
 
-                    {/* Definition Body */}
-                    <p className="text-gray-400 text-sm leading-relaxed mb-6 border-l-2 border-white/10 pl-3">
+                    <p className="text-slate-400 text-sm leading-relaxed mb-6 border-l-2 border-slate-800 pl-3 group-hover:border-slate-700 transition-colors">
                         {category.definition}
                     </p>
 
-                    {/* Footer: Ingredients Preview */}
                     <div className="flex items-center justify-between mt-auto">
-                        <div className="flex items-center -space-x-3 pl-1">
-                            {/* On affiche les 4 premiers ingrédients en mini bulles */}
-                            {category.topIngredients.slice(0, 4).map((ing, i) => (
-                                <div key={i} className="w-9 h-9 rounded-full border-2 border-[#1A1A1A] bg-gray-800 overflow-hidden relative shadow-md">
-                                    {ing.image ? (
-                                        <img src={ing.image} alt="" className="w-full h-full object-cover opacity-80" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-[10px]">🍽️</div>
-                                    )}
-                                </div>
-                            ))}
+                        <div className="flex items-center -space-x-2 pl-1">
+                            {category.topIngredients.slice(0, 4).map((ing, i) => {
+                                const Icon = getIngredientIcon(ing.name);
+                                return (
+                                    <div 
+                                        key={i} 
+                                        className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center relative shadow-sm"
+                                        style={{ color: category.themeColor }}
+                                    >
+                                        <Icon className="w-3.5 h-3.5 opacity-80" />
+                                    </div>
+                                );
+                            })}
                             {category.topIngredients.length > 4 && (
-                                <div className="w-9 h-9 rounded-full border-2 border-[#1A1A1A] bg-[#252525] flex items-center justify-center text-[10px] text-gray-400 font-bold shadow-md">
+                                <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[9px] text-slate-400 font-bold shadow-sm">
                                     +{category.topIngredients.length - 4}
                                 </div>
                             )}
                         </div>
-                        <span className="text-xs font-medium text-gray-600 group-hover:text-white transition-colors flex items-center gap-1">
-                            Voir le détail <ArrowRight className="w-3 h-3" />
+                        <span 
+                            className="text-xs font-medium text-slate-500 transition-colors flex items-center gap-1"
+                            style={{ color: `${category.themeColor}CC` }} // CC = opacité
+                        >
+                            Détails <ArrowRight className="w-3 h-3" />
                         </span>
                     </div>
 
@@ -161,7 +188,7 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
         </div>
       </div>
 
-      {/* --- MODALE 1 : TIP DU JOUR (Slide Right) --- */}
+      {/* --- MODALE 1 : TIP DU JOUR --- */}
       <AnimatePresence>
         {showTip && (
           <motion.div 
@@ -169,50 +196,50 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[100] bg-[#0a0a0a] text-white flex flex-col overflow-hidden"
+            className="fixed inset-0 z-[100] bg-slate-950 text-white flex flex-col overflow-hidden"
           >
-             <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black pointer-events-none" />
-             
-             {/* Header */}
-             <div className="relative z-10 p-6 pt-8 flex items-center justify-between">
+             <div className="relative z-10 p-6 pt-8 flex items-center justify-between border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-md">
                 <button 
                   onClick={() => setShowTip(false)}
-                  className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors backdrop-blur-md border border-white/5"
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-900 rounded-xl hover:bg-slate-800 transition-colors border border-slate-800 text-sm font-bold text-slate-300"
                 >
-                  <ArrowRight className="w-6 h-6 rotate-180" />
+                  <ArrowLeft className="w-4 h-4" /> Retour
                 </button>
              </div>
 
-             <div className="relative z-10 px-6 mt-4 flex-1 overflow-y-auto pb-24">
-                <span className="text-6xl mb-6 block drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">💡</span>
-                <span className="text-[#C1FB00] font-bold tracking-widest uppercase text-sm mb-2 block">
-                    Le Conseil du jour
-                </span>
-                <h2 className="text-3xl font-bold leading-tight mb-8">
-                    {dailyTip.title}
-                </h2>
+             <div className="relative z-10 px-6 mt-6 flex-1 overflow-y-auto pb-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <span className="text-4xl p-3 bg-[#C1FB00]/10 rounded-2xl border border-[#C1FB00]/20">💡</span>
+                    <div>
+                        <span className="text-[#C1FB00] font-bold tracking-widest uppercase text-xs mb-1 block">
+                            Conseil du jour
+                        </span>
+                        <h2 className="text-2xl font-bold leading-tight text-white">
+                            {dailyTip.title}
+                        </h2>
+                    </div>
+                </div>
                 
-                <div className="bg-[#1A1A1A]/80 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl">
-                    {dailyAdvice ? (
-                      <div className="text-gray-300 space-y-5 leading-relaxed text-lg whitespace-pre-wrap">
-                        {dailyAdvice.conseil}
-                      </div>
-                    ) : (
-                      <div className="text-gray-300">
-                        {dailyTip.longContent}
-                      </div>
-                    )}
+                <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#C1FB00] opacity-5 blur-[60px] pointer-events-none" />
+                    <p className="text-lg font-medium text-white mb-6 leading-relaxed border-b border-slate-800 pb-6">
+                       {dailyTip.summary.replace(/\*\*/g, '')}
+                    </p>
+                    <div 
+                        className="text-slate-400 space-y-5 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
+                    />
                 </div>
              </div>
 
              {dailyCategory && (
-               <div className="relative z-10 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
+               <div className="relative z-10 p-6 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent">
                  <button
                     onClick={() => { setShowTip(false); setSelectedCategoryId(dailyCategory.id); }}
-                    className="w-full py-4 rounded-2xl font-bold text-black flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.4)]"
+                    className="w-full py-4 rounded-2xl font-bold text-black flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:brightness-110"
                     style={{ backgroundColor: dailyCategory.themeColor }}
                  >
-                    {dailyCategory.icon} Voir {dailyCategory.title}
+                    <dailyCategory.icon className="w-5 h-5" /> Voir {dailyCategory.title}
                  </button>
                </div>
              )}
@@ -220,7 +247,7 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
         )}
       </AnimatePresence>
 
-      {/* --- MODALE 2 : DÉTAIL CATÉGORIE (Slide Right) --- */}
+      {/* --- MODALE 2 : DÉTAIL CATÉGORIE --- */}
       <AnimatePresence>
         {selectedCategoryId && selectedCategory && (
             <motion.div 
@@ -228,86 +255,120 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed inset-0 z-[110] bg-[#0a0a0a] flex flex-col overflow-hidden"
+                className="fixed inset-0 z-[110] bg-slate-950 flex flex-col overflow-hidden"
             >
-                {/* Header */}
-                <div className="relative p-6 pt-10 pb-8 shrink-0 border-b border-white/5 overflow-hidden">
-                    <div className={`absolute inset-0 bg-gradient-to-br ${selectedCategory.gradient} opacity-20 blur-2xl`} />
-                    
-                    <button 
+                <div className="relative p-6 pt-10 pb-6 shrink-0 border-b border-slate-800/50 bg-slate-950 z-20 flex items-center justify-between">
+                     <button 
                         onClick={() => setSelectedCategoryId(null)}
-                        className="absolute top-8 right-6 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors backdrop-blur-md z-20"
+                        className="flex items-center gap-2 px-3 py-2 bg-slate-900 rounded-xl hover:bg-slate-800 transition-colors border border-slate-800 text-sm font-bold text-slate-300"
                     >
-                        <X className="w-6 h-6 text-white" />
+                        <ArrowLeft className="w-4 h-4" /> Retour
                     </button>
-
-                    <div className="relative z-10 flex items-center gap-5 mt-4">
-                        <span className="text-6xl drop-shadow-lg">{selectedCategory.icon}</span>
-                        <div>
-                            <h2 className="text-3xl font-bold text-white mb-1">
-                                {selectedCategory.title}
-                            </h2>
-                            <p className="text-sm font-bold tracking-widest uppercase opacity-80" style={{ color: selectedCategory.themeColor }}>
-                                {selectedCategory.subtitle}
-                            </p>
-                        </div>
-                    </div>
+                    
+                    <span 
+                        className="text-[10px] font-bold tracking-widest uppercase px-2 py-1 bg-slate-900 rounded border border-slate-800"
+                        style={{ color: selectedCategory.themeColor }}
+                    >
+                        {selectedCategory.subtitle}
+                    </span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-8 bg-[#0a0a0a]">
-                    
-                    {/* Bloc Science */}
-                    <div className="bg-[#161616] p-6 rounded-3xl border border-white/5 relative overflow-hidden">
-                         <div className="absolute top-0 right-0 w-32 h-32 bg-[#F57BFF] opacity-5 blur-[80px] rounded-full pointer-events-none" />
+                <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-8 bg-slate-950 relative">
+                    <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${selectedCategory.gradient} opacity-10 blur-[80px] pointer-events-none`} />
+
+                    <div>
+                         <div className="flex items-center gap-4 mb-4">
+                            <span 
+                                className="text-5xl drop-shadow-lg p-3 rounded-3xl border border-white/5"
+                                style={{ backgroundColor: `${selectedCategory.themeColor}10` }}
+                            >
+                                <selectedCategory.icon 
+                                    className="w-10 h-10" 
+                                    style={{ color: selectedCategory.themeColor }}
+                                    strokeWidth={1.5} 
+                                />
+                            </span>
+                            <h2 
+                                className="text-3xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400"
+                            >
+                                {selectedCategory.title}
+                            </h2>
+                         </div>
+                         <p className="text-slate-400 leading-relaxed border-l-2 pl-4" style={{ borderColor: selectedCategory.themeColor }}>
+                             {selectedCategory.definition}
+                         </p>
+                    </div>
+
+                    <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 relative overflow-hidden shadow-sm">
                          <h3 className="flex items-center gap-2 font-bold text-[#F57BFF] mb-3 text-sm uppercase tracking-wide">
                             <BookOpen className="w-4 h-4" /> La Science
                          </h3>
-                         <p className="text-gray-300 leading-relaxed text-sm">
+                         <p className="text-slate-300 leading-relaxed text-sm">
                             {selectedCategory.details.science}
                          </p>
                     </div>
 
-                    {/* Bloc Timing */}
-                    <div className="bg-[#161616] p-6 rounded-3xl border border-white/5 relative overflow-hidden">
-                         <div className="absolute top-0 right-0 w-32 h-32 bg-[#C1FB00] opacity-5 blur-[80px] rounded-full pointer-events-none" />
+                    <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 relative overflow-hidden shadow-sm">
                          <h3 className="flex items-center gap-2 font-bold text-[#C1FB00] mb-3 text-sm uppercase tracking-wide">
                             <Clock className="w-4 h-4" /> Quand Manger ?
                          </h3>
-                         <p className="text-gray-300 leading-relaxed text-sm">
+                         <p className="text-slate-300 leading-relaxed text-sm">
                             {selectedCategory.details.timing}
                          </p>
                     </div>
 
-                    {/* Liste Aliments */}
                     <div>
-                         <div className="flex items-center justify-between mb-4 px-2">
+                         <div className="flex items-center justify-between mb-4 px-1">
                              <h3 className="flex items-center gap-2 font-bold text-[#00F65C] uppercase text-sm tracking-wide">
-                                <Flame className="w-4 h-4" /> Les Aliments
+                                <Flame className="w-4 h-4" /> Top Aliments
                              </h3>
-                             <span className="text-xs bg-[#1A1A1A] px-3 py-1 rounded-full text-gray-400 font-medium border border-white/10">
+                             <span className="text-xs bg-slate-900 px-3 py-1 rounded-full text-slate-500 font-medium border border-slate-800">
                                 {selectedCategory.topIngredients.length} choix
                              </span>
                          </div>
                          
                          <div className="grid grid-cols-1 gap-3">
-                            {selectedCategory.topIngredients.map((ing) => (
-                                <div key={ing.id} className="flex items-center gap-4 p-3 bg-[#161616] rounded-2xl border border-white/5 shadow-sm hover:bg-[#1A1A1A] transition-colors">
-                                    <div className="w-16 h-16 rounded-xl bg-gray-900 overflow-hidden flex-shrink-0 relative border border-white/5">
-                                        {ing.image ? (
-                                            <img src={ing.image} className="w-full h-full object-cover opacity-90" alt={ing.name}/>
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-lg text-white">{ing.name}</p>
-                                        <div className="flex gap-3 text-xs text-gray-400 mt-1">
-                                            <span>🔥 {ing.calories} kcal</span>
-                                            {ing.proteins && <span>💪 {ing.proteins}g P</span>}
+                            {selectedCategory.topIngredients.map((ing) => {
+                                const Icon = getIngredientIcon(ing.name);
+                                return (
+                                    <div key={ing.id} className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-sm hover:border-slate-700 transition-colors">
+                                        <div className="w-14 h-14 rounded-2xl bg-slate-950 flex items-center justify-center flex-shrink-0 relative border border-slate-800">
+                                            {/* Icône aliment colorée selon la catégorie */}
+                                            <Icon 
+                                                className="w-7 h-7" 
+                                                strokeWidth={1.5} 
+                                                style={{ color: selectedCategory.themeColor }}
+                                            />
+                                        </div>
+                                        
+                                        <div className="flex-1">
+                                            <p className="font-bold text-lg text-white mb-1">{ing.name}</p>
+                                            
+                                            {/* MACROS AUX BONNES COULEURS SOMA */}
+                                            <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
+                                                <span 
+                                                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#00F65C]/10"
+                                                    style={{ color: '#00F65C' }}
+                                                >
+                                                    P: {ing.proteins || 0}g
+                                                </span>
+                                                <span 
+                                                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#C1FB00]/10"
+                                                    style={{ color: '#C1FB00' }}
+                                                >
+                                                    G: {ing.carbs || 0}g
+                                                </span>
+                                                <span 
+                                                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#F57BFF]/10"
+                                                    style={{ color: '#F57BFF' }}
+                                                >
+                                                    L: {ing.fats || 0}g
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                          </div>
                     </div>
                 </div>
