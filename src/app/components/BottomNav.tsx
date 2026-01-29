@@ -10,7 +10,6 @@ export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
   const navItems = [
     { id: 'dashboard', icon: Home, label: 'Accueil' },
     { id: 'calendar', icon: Calendar, label: 'Calendrier' },
-    { id: 'tracker', icon: Utensils, label: 'Nutrition' },
     { id: 'advice', icon: Lightbulb, label: 'Conseils' },
     { id: 'profile', icon: User, label: 'Profil' },
   ];

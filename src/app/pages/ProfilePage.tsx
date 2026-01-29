@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { User, Activity, Target, ChevronRight } from 'lucide-react';
+// Ajout des icônes Utensils (pour le titre), Dumbbell, Zap, Shield (pour les macros)
+import { User, Activity, Target, ChevronRight, Utensils, Dumbbell, Zap, Shield } from 'lucide-react';
 import { UserGoal, SportType, Gender } from '../types';
 import PageHeader from '../components/PageHeader';
 
@@ -161,7 +162,6 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     {userProfile?.gender === 'female' ? 'Femme' : 'Homme'}
                   </span>
                 </div>
-                {/* Display Birthday or Age? Original had Age. */}
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Âge</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">{currentAge} ans</span>
@@ -219,6 +219,53 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                 ))}
               </div>
             </div>
+
+            {/* NOUVELLE SECTION : Objectifs Nutritionnels (Même style que Dashboard) */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-3 mb-4">
+                {/* Icône d'en-tête pour la nutrition */}
+                <div className="w-10 h-10 bg-gradient-to-br from-[#00F65C]/20 to-[#C1FB00]/20 rounded-xl flex items-center justify-center">
+                  <Utensils className="w-5 h-5 text-[#00F65C]" />
+                </div>
+                <h2 className="font-semibold text-lg text-gray-900 dark:text-white">Objectifs Nutritionnels</h2>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3">
+                 {/* Carte Protéines */}
+                 <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-1.5">
+                    <Dumbbell className="w-5 h-5 text-[#00F65C]" />
+                    <div className="text-center">
+                       <span className="block text-xl font-bold text-gray-900 dark:text-white">
+                          {userProfile?.nutritionGoals.proteines || 0}g
+                       </span>
+                       <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">Protéines</span>
+                    </div>
+                 </div>
+
+                 {/* Carte Glucides */}
+                 <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-1.5">
+                    <Zap className="w-5 h-5 text-[#C1FB00]" />
+                    <div className="text-center">
+                       <span className="block text-xl font-bold text-gray-900 dark:text-white">
+                          {userProfile?.nutritionGoals.glucides || 0}g
+                       </span>
+                       <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">Glucides</span>
+                    </div>
+                 </div>
+
+                 {/* Carte Lipides */}
+                 <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-1.5">
+                    <Shield className="w-5 h-5 text-[#F57BFF]" />
+                    <div className="text-center">
+                       <span className="block text-xl font-bold text-gray-900 dark:text-white">
+                          {userProfile?.nutritionGoals.lipides || 0}g
+                       </span>
+                       <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">Lipides</span>
+                    </div>
+                 </div>
+              </div>
+            </div>
+
           </div>
         ) : (
           /* --- MODE ÉDITION --- */
@@ -299,9 +346,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                 <div>
                   <label className="block mb-1.5 text-sm text-gray-700 dark:text-gray-300">Heures sport / semaine (moyenne)</label>
                   <input
-                    type="number" // kept as number input but saved as string or we should use text input? "1-2" vs "5".
-                    // Types says string.
-                    // User might input 5.
+                    type="number"
                     min="0"
                     value={formData.frequence_entrainement}
                     onChange={(e) => setFormData({ ...formData, frequence_entrainement: e.target.value })}
@@ -331,7 +376,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               </div>
             </div>
 
-            {/* Edit Sports (Sans ajout manuel) */}
+            {/* Edit Sports */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
               <h2 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">Mes sports</h2>
               <div className="grid grid-cols-2 gap-3 mb-4">

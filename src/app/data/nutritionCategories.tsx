@@ -8,8 +8,8 @@ export interface NutritionCategory {
   title: string;
   subtitle: string;
   icon: React.ElementType;
-  themeColor: string; // La couleur principale (Hex)
-  gradient: string;   // Le dégradé Tailwind
+  themeColor: string;
+  gradient: string;
   definition: string;
   details: {
     benefits: string;
@@ -37,12 +37,13 @@ export const dailyTip = {
   title: "Boost tes mitochondries",
   categoryLink: 'recovery',
   summary: "Grosse séance hier ? Tes réserves sont basses. Ce midi, ajoute une portion de **quinoa** ou de **riz complet** pour refaire ton stock.",
+  // MISE À JOUR : Classes compatibles Light/Dark mode
   longContent: `
     <p>Après une séance intense, tes stocks de glycogène sont épuisés.</p>
     <p class="mt-4">Pour récupérer sans stocker de gras, il faut des glucides à index glycémique modéré.</p>
-    <div class="mt-6 p-4 bg-[#C1FB00]/5 rounded-xl border border-[#C1FB00]/20">
-      <p class="font-bold text-[#C1FB00] mb-2">⚡ Action :</p>
-      <ul class="list-disc pl-5 space-y-2 text-sm text-slate-300">
+    <div class="mt-6 p-4 bg-gray-50 dark:bg-[#C1FB00]/5 rounded-xl border border-gray-200 dark:border-[#C1FB00]/20">
+      <p class="font-bold text-gray-900 dark:text-[#C1FB00] mb-2">⚡ Action :</p>
+      <ul class="list-disc pl-5 space-y-2 text-sm text-gray-700 dark:text-slate-300">
         <li>150g de Quinoa cuit</li>
         <li>Une patate douce au four</li>
         <li>Évite le pain blanc ce midi</li>
@@ -60,7 +61,7 @@ export const nutritionCategories: NutritionCategory[] = [
     title: 'Construction',
     subtitle: 'Protéines',
     icon: Dumbbell,
-    themeColor: '#00F65C', // VERT SOMA
+    themeColor: '#00F65C',
     gradient: 'from-[#00F65C]/20 to-[#00F65C]/5',
     definition: "Les briques indispensables pour réparer et densifier tes fibres musculaires.",
     details: {
@@ -75,7 +76,7 @@ export const nutritionCategories: NutritionCategory[] = [
     title: 'Énergie',
     subtitle: 'Glucides',
     icon: Zap,
-    themeColor: '#C1FB00', // JAUNE SOMA
+    themeColor: '#C1FB00',
     gradient: 'from-[#C1FB00]/20 to-[#C1FB00]/5',
     definition: "Le carburant haute-octane pour tenir l'intensité et la durée.",
     details: {
@@ -90,7 +91,7 @@ export const nutritionCategories: NutritionCategory[] = [
     title: 'Protection',
     subtitle: 'Lipides & Anti-Inflam.',
     icon: Shield,
-    themeColor: '#F57BFF', // ROSE SOMA
+    themeColor: '#F57BFF',
     gradient: 'from-[#F57BFF]/20 to-[#F57BFF]/5',
     definition: "Les pompiers naturels pour éteindre l'inflammation et protéger tes articulations.",
     details: {
@@ -105,7 +106,7 @@ export const nutritionCategories: NutritionCategory[] = [
     title: 'Vitalité',
     subtitle: 'Vitamines & Minéraux',
     icon: Scale,
-    themeColor: '#38BDF8', // BLEU CIEL (Pour changer du blanc)
+    themeColor: '#38BDF8',
     gradient: 'from-[#38BDF8]/20 to-[#38BDF8]/5',
     definition: "Le nettoyage interne pour éliminer l'acidité et booster l'immunité.",
     details: {
