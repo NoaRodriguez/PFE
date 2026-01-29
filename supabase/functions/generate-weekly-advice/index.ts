@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
         
         DONNÉES UTILISATEUR :
         - Profil : ${JSON.stringify(profile)}
+        - profil_tag : ${profileTag}
         - Séances (J à J+6) : ${JSON.stringify(seances)}
         - Compétitions : ${JSON.stringify(comps)}
         - Alerte Intensité : ${intenseCount} séances intenses détectées.
