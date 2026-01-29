@@ -12,7 +12,7 @@ interface Seance {
   date: string;
   titre: string;
   type: string;
-  intensité: number; // Correction : correspond à votre SQL 'intensité'
+  intensité: number; 
 }
 
 const corsHeaders = {
@@ -36,7 +36,6 @@ Deno.serve(async (req) => {
 
         // 1. COLLECTE DU CONTEXTE UTILISATEUR
         const { data: profile } = await supabase.from('profil_utilisateur').select('*').eq('id', userId).single()
-
         const today = new Date().toISOString().split('T')[0]
         const endWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
@@ -80,10 +79,11 @@ Deno.serve(async (req) => {
 
         // 5. GÉNÉRATION DU CONSEIL VIA GPT-4o
         const prompt = `
-        Tu es un expert en nutrition sportive. Génère la STRATÉGIE DE LA SEMAINE pour ${profile?.prenom || 'l\'utilisateur'}.
+        Tu es un expert en nutrition sportive, agissant comme un préparateur physique personnel. Ton ton est cool, motivant et éducatif : évite le jargon médical froid, utilise des analogies concrètes, mais reste précis sur les chiffres.
+        Génère la STRATÉGIE DE LA SEMAINE pour ${profile?.prenom || 'l\'utilisateur'}.
         
         DONNÉES UTILISATEUR :
-        - Profil : ${profileTag}
+        - Profil : ${JSON.stringify(profile)}
         - Séances (J à J+6) : ${JSON.stringify(seances)}
         - Compétitions : ${JSON.stringify(comps)}
         - Alerte Intensité : ${intenseCount} séances intenses détectées.
@@ -91,18 +91,19 @@ Deno.serve(async (req) => {
         CONTEXTE DU GUIDE NUTRITIONNEL :
         ${contextText}
         
-        CONSIGNES PRIORITAIRES (Issues du guide) :
-        - Périodisation : 55% glucides par défaut, monter à 70% si compétition à J+3 ou J+6.
-        - Alerte Inflammation : Si intense_count > 3, alerte sur la production d'interleukines 6 (IL-6) et l'hepcidine qui bloque le fer.
-        - Quotas Hebdo : 400g poisson gras/semaine, 3 c.à.s huile colza/jour (Oméga 3), poignée oléagineux.
-        - Digestion : Si compétition à J-2, recommander régime pauvre en fibres ou sans résidus.
-        - Style expert, direct, encourageant.
-
+        DIRECTIVES DE REDACTION : 
+        - Focus de ta semaine : Commence par 4 à 5 phrases maximum qui donnent le "LA" de la semaine. Identifie l'événement majeur (une grosse séance, une compétition ou la récupération) et explique à l'utilisateur quel doit être son "Mindset" nutritionnel.
+        - SI AUCUNE SÉANCE N'EST PRÉVUE : Ne sois pas générique. Encourage une semaine de "Régénération" basée sur l'assiette méditerranéenne, le maintien des bons lipides et la micro-nutrition pour réparer les tissus.
+        - LOGIQUE DE PÉRIODISATION : 
+        Semaine calme : Garde le curseur à 55% de glucides complexes.
+        Prépa intense ou Compétition (J+3 ou J+6) : Annonce le passage à 70% pour saturer le glycogène
+        - ALERTE INFLAMMATION : Si intense_count > 3, explique avec pédagogie que trop d'intensité sans "resucre" produit de l'IL-6 qui bloque l'absorption du fer via l'hepcidine
+        
         FORMAT DE SORTIE :
+        [Texte court de 4-5 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.]
         1. Analyse de la Charge Hebdomadaire
         2. Calendrier Stratégique (J à J+6)
-        3. Checklist "Courses & Stocks"
-        4. Conseil Prévention
+        3. Conseil Prévention
         `
 
         const chatResponse = await openai.chat.completions.create({
