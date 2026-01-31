@@ -18,14 +18,18 @@ interface Seance {
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
 // 2. UTILISATION DE Deno.serve (Méthode moderne recommandée)
 Deno.serve(async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+    // Handle CORS preflight explicitly
+    if (req.method === 'OPTIONS') {
+        return new Response('ok', { headers: corsHeaders })
+    }
 
     try {
-        const { userId } = await req.json()
+        const { user_id: userId, force_update } = await req.json()
         
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -34,14 +38,44 @@ Deno.serve(async (req) => {
         const supabase = createClient(supabaseUrl, supabaseKey)
         const openai = new OpenAI({ apiKey: openAiKey })
 
-        // 1. COLLECTE DU CONTEXTE UTILISATEUR
+        // 1. CHECK IF ADVICE ALREADY EXISTS FOR TODAY (STRICT DAY COMPARISON)
+        const now = new Date()
+        const todayStr = now.toISOString().split('T')[0]
+        
+        // Calculate tomorrow for strict upper bound
+        const tomorrow = new Date(now)
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const tomorrowStr = tomorrow.toISOString().split('T')[0]
+
+        const { data: existingAdvice } = await supabase
+            .from('conseil_semaine')
+            .select('id')
+            .eq('id_utilisateur', userId)
+            .gte('date_creation', `${todayStr}T00:00:00`)
+            .lt('date_creation', `${tomorrowStr}T00:00:00`)
+        
+        if (existingAdvice && existingAdvice.length > 0) {
+            if (force_update) {
+                console.log(`Force update requested. Deleting ${existingAdvice.length} existing advice(s) for user ${userId} on ${todayStr}.`)
+                const idsToDelete = existingAdvice.map(a => a.id)
+                await supabase
+                    .from('conseil_semaine')
+                    .delete()
+                    .in('id', idsToDelete)
+            } else {
+                console.log(`Advice already exists for user ${userId} today.`)
+                return new Response(JSON.stringify({ message: 'Advice already exists for today' }), { headers: corsHeaders })
+            }
+        }
+
+        // 1B. COLLECTE DU CONTEXTE UTILISATEUR
         const { data: profile } = await supabase.from('profil_utilisateur').select('*').eq('id', userId).single()
-        const today = new Date().toISOString().split('T')[0]
-        const endWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        
+        const endWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
         // Récupération avec vos noms de colonnes réels
-        const { data: seances } = await supabase.from('seance').select('*').eq('id_utilisateur', userId).gte('date', today).lte('date', endWeek)
-        const { data: comps } = await supabase.from('competition').select('*').eq('id_utilisateur', userId).gte('date', today).lte('date', endWeek)
+        const { data: seances } = await supabase.from('seance').select('*').eq('id_utilisateur', userId).gte('date', todayStr).lte('date', endWeek)
+        const { data: comps } = await supabase.from('competition').select('*').eq('id_utilisateur', userId).gte('date', todayStr).lte('date', endWeek)
 
         // 2. DÉTERMINATION DU PROFIL
         let profileTag = "modere"

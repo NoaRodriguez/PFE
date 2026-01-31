@@ -15,6 +15,7 @@ interface AppContextType {
   sessions: TrainingSession[];
   competitions: Competition[];
   dailyNutrition: DailyNutrition | null;
+  weeklyAdvice: string | null; // [NEW]
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   // Auth methods
@@ -43,6 +44,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [dailyNutrition, setDailyNutrition] = useState<DailyNutrition | null>(null);
+  const [weeklyAdvice, setWeeklyAdvice] = useState<string | null>(null); // [NEW]
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : true;
@@ -84,6 +87,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUserProfileState(null);
         setSessions([]);
         setCompetitions([]);
+        setWeeklyAdvice(null);
       }
     });
 
@@ -170,7 +174,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCompetitions(mappedCompetitions);
     }
 
+    // --- LOAD WEEKLY ADVICE ---
+    // Fetch latest advice for this user today
+    const today = new Date().toISOString().split('T')[0];
+    const { data: adviceData } = await supabase
+        .from('conseil_semaine')
+        .select('conseil')
+        .eq('id_utilisateur', userId)
+        .gte('date_creation', `${today}T00:00:00`)
+        .order('date_creation', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
+    if (adviceData) {
+        setWeeklyAdvice(adviceData.conseil);
+    } else {
+        // Trigger generic check if nothing found (maybe first login of day)
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        
+        supabase.functions.invoke('generate-weekly-advice', {
+          body: { user_id: userId },
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }).then(async ({ data, error }) => {
+          if (error) console.error('Error invoking weekly advice:', error);
+          else if (data?.advice) {
+             setWeeklyAdvice(data.advice); // Update state with newly generated advice
+          }
+        });
+    }
   };
 
   const parseJsonSafe = (input: string | any[] | null) => {
@@ -292,6 +326,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
         id: data.id
       };
       setSessions(prev => [newSession, ...prev]);
+
+      // --- TRIGGER WEEKLY ADVICE REGENERATION ---
+      // Si la séance est dans les 10 prochains jours, on régénère le conseil
+      const sessionDate = new Date(session.date);
+      sessionDate.setHours(0, 0, 0, 0); // Normalize to midnight
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Normalize to midnight
+
+      const tenDaysLater = new Date(today);
+      tenDaysLater.setDate(today.getDate() + 10);
+
+      if (sessionDate.getTime() >= today.getTime() && sessionDate.getTime() <= tenDaysLater.getTime()) {
+          console.log("Session added within 10 days horizon. Regenerating weekly advice...");
+          const sessionAuth = await supabase.auth.getSession();
+          const token = sessionAuth.data.session?.access_token;
+
+          supabase.functions.invoke('generate-weekly-advice', {
+              body: { user_id: user.id, force_update: true },
+              headers: { Authorization: `Bearer ${token}` }
+          }).then(async ({ data, error }) => {
+              if (error) console.error('Error invoking weekly advice regeneration:', error);
+              else {
+                  console.log('Weekly advice regeneration triggered.');
+                  if (data?.advice) {
+                      setWeeklyAdvice(data.advice); // Update with new advice
+                  }
+              }
+          });
+      }
     }
   };
 
@@ -358,6 +422,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
         id: data.id
       };
       setCompetitions(prev => [...prev, newComp]);
+
+      // --- TRIGGER WEEKLY ADVICE REGENERATION ---
+      // Si la compétition est dans les 10 prochains jours, on régénère le conseil
+      const compDate = new Date(competition.date);
+      compDate.setHours(0, 0, 0, 0);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const tenDaysLater = new Date(today);
+      tenDaysLater.setDate(today.getDate() + 10);
+
+      if (compDate.getTime() >= today.getTime() && compDate.getTime() <= tenDaysLater.getTime()) {
+          console.log("Competition added within 10 days horizon. Regenerating weekly advice...");
+          const sessionAuth = await supabase.auth.getSession();
+          const token = sessionAuth.data.session?.access_token;
+
+          supabase.functions.invoke('generate-weekly-advice', {
+              body: { user_id: user.id, force_update: true },
+              headers: { Authorization: `Bearer ${token}` }
+          }).then(async ({ data, error }) => {
+              if (error) console.error('Error invoking weekly advice regeneration:', error);
+              else {
+                  console.log('Weekly advice regeneration triggered.');
+                  if (data?.advice) {
+                      setWeeklyAdvice(data.advice);
+                  }
+              }
+          });
+      }
     }
   };
 
@@ -468,6 +562,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sessions,
         competitions,
         dailyNutrition,
+        weeklyAdvice, // [NEW]
         isDarkMode,
         toggleDarkMode,
         signIn,

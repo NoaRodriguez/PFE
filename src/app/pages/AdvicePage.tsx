@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PageHeader from '../components/PageHeader';
+import { useApp } from '../context/AppContext'; // [NEW] relative path correction if needed
 import { nutritionCategories, dailyTip, weeklyTip } from '../data/nutritionCategories';
 import { 
   ArrowLeft, ArrowRight, BookOpen, Clock, Flame, ChevronRight, 
@@ -23,6 +24,7 @@ const getIngredientIcon = (name: string) => {
 };
 
 export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { weeklyAdvice } = useApp(); // [NEW] Use dynamic advice
   const [showTip, setShowTip] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
@@ -46,16 +48,16 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
               <div className="flex items-center gap-2 mb-4">
                  <weeklyTip.icon className="w-5 h-5 text-[#00F65C]" />
                  <span className="text-xs font-bold uppercase tracking-widest text-[#00F65C] bg-[#00F65C]/10 px-2 py-1 rounded">
-                   {weeklyTip.subtitle}
+                   {weeklyAdvice ? "VOTRE STRATÉGIE" : weeklyTip.subtitle}
                  </span>
               </div>
               
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
                  {weeklyTip.title}
               </h2>
-              <p className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
-                 {weeklyTip.content}
-              </p>
+              <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 whitespace-pre-wrap"> 
+                 {weeklyAdvice || weeklyTip.content}
+              </div>
 
               <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300 font-medium bg-gray-100 dark:bg-slate-800 w-fit px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700/50 shadow-sm">
                  Objectif : Régularité
