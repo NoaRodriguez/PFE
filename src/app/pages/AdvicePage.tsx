@@ -24,7 +24,7 @@ const getIngredientIcon = (name: string) => {
 };
 
 export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { weeklyAdvice } = useApp(); // [NEW] Use dynamic advice
+  const { weeklyAdvice, dailyAdvice } = useApp(); // [NEW] Use dynamic advice
   const [showTip, setShowTip] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
@@ -84,12 +84,12 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                  </div>
 
                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
-                    {dailyTip.title}
+                    {dailyAdvice ? "Stratégie 24h" : dailyTip.title}
                  </h3>
                  
-                 <p className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
-                    {dailyTip.summary.replace(/\*\*/g, '')}
-                 </p>
+                 <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3 whitespace-pre-wrap">
+                    {dailyAdvice ? dailyAdvice.split('\n')[0] : dailyTip.summary.replace(/\*\*/g, '')}
+                 </div>
                  
                  <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-gray-100 dark:bg-[#C1FB00]/10 text-gray-900 dark:text-[#C1FB00] border border-gray-200 dark:border-[#C1FB00]/20 px-4 py-2.5 rounded-xl group-hover:bg-gray-200 dark:group-hover:bg-[#C1FB00]/20 transition-colors">
                     Lire la suite <ArrowRight className="w-3 h-3" />
@@ -224,13 +224,24 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#C1FB00] opacity-5 blur-[60px] pointer-events-none" />
-                    <p className="text-lg font-medium text-gray-900 dark:text-white mb-6 leading-relaxed border-b border-gray-100 dark:border-slate-800 pb-6">
-                       {dailyTip.summary.replace(/\*\*/g, '')}
-                    </p>
-                    <div 
-                        className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
-                    />
+                    
+                    {dailyAdvice ? (
+                        <div 
+                            className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed whitespace-pre-wrap"
+                        >
+                            {dailyAdvice}
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-lg font-medium text-gray-900 dark:text-white mb-6 leading-relaxed border-b border-gray-100 dark:border-slate-800 pb-6">
+                               {dailyTip.summary.replace(/\*\*/g, '')}
+                            </p>
+                            <div 
+                                className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
+                            />
+                        </>
+                    )}
                 </div>
              </div>
 

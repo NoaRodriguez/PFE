@@ -22,7 +22,7 @@ const isSameDay = (date1: Date | string, date2: Date | string) => {
 };
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { userProfile, signOut, sessions, competitions, getTodayNutrition, isDarkMode, toggleDarkMode } = useApp();
+  const { userProfile, signOut, sessions, competitions, getTodayNutrition, isDarkMode, toggleDarkMode, dailyAdvice } = useApp();
 
   useWeeklyAdvice(userProfile?.id);
 
@@ -90,18 +90,27 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
       <div className="max-w-md mx-auto p-4 pb-24">
         {/* Advice of the Day */}
-        <div className="mb-4 bg-gradient-to-r from-[#00F65C]/10 via-[#C1FB00]/10 to-[#F57BFF]/10 rounded-2xl p-5 border border-[#00F65C]/20">
+        <div 
+          onClick={() => onNavigate('advice')}
+          className="mb-4 bg-gradient-to-r from-[#00F65C]/10 via-[#C1FB00]/10 to-[#F57BFF]/10 rounded-2xl p-5 border border-[#00F65C]/20 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div className="flex items-center gap-2 mb-2">
             <Lightbulb className="w-5 h-5 text-[#00F65C]" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Conseil du jour</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {dailyAdvice ? "Stratégie 24h" : "Conseil du jour"}
+            </h3>
           </div>
           <div className="flex items-start gap-3">
-            <div className="text-3xl">{adviceOfTheDay.icon}</div>
+            <div className="text-3xl">
+               {dailyAdvice ? "🎯" : adviceOfTheDay.icon}
+            </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{adviceOfTheDay.title}</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {adviceOfTheDay.description}
-              </p>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                 {dailyAdvice ? "Votre plan du jour" : adviceOfTheDay.title}
+              </h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 whitespace-pre-wrap">
+                {dailyAdvice ? dailyAdvice : adviceOfTheDay.description}
+              </div>
             </div>
           </div>
         </div>
