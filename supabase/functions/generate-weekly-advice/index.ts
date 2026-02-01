@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
                     .delete()
                     .in('id', idsToDelete)
             } else {
-                console.log(`Advice already exists for user ${userId} today.`)
+                console.log(`generate-weekly-advice: Existing advice found for user ${userId} on ${todayStr}. Count=${existingAdvice.length}. force_update=${force_update}`)
                 return new Response(JSON.stringify({ message: 'Advice already exists for today' }), { headers: corsHeaders })
             }
         }
@@ -135,12 +135,12 @@ Deno.serve(async (req) => {
         - ALERTE INFLAMMATION : Si intense_count > 3, explique avec pédagogie que trop d'intensité sans "resucre" produit de l'IL-6 qui bloque l'absorption du fer via l'hepcidine
         
         FORMAT DE SORTIE :
-        [Titre court avec Texte court de 4-5 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.]
-        1. Analyse de la Charge Hebdomadaire
-        2. Calendrier Stratégique (J à J+6)
-        3. Conseil Prévention
+        Titre court avec Texte court de 2-3 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.[ne mentionne pas ce titre dans ta réponse]
+        Analyse de la Charge Hebdomadaire [ne mentionne pas ce titre dans ta réponse]
+        Calendrier Stratégique (J à J+6) [ne mentionne pas ce titre dans ta réponse]
+        Conseil Prévention [ne mentionne pas ce titre dans ta réponse]
         `
-
+                
         const chatResponse = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [{ role: "user", content: prompt }],
@@ -148,6 +148,14 @@ Deno.serve(async (req) => {
         })
 
         const advice = chatResponse.choices[0].message.content
+
+        // Log brief info about the OpenAI response
+        try {
+            console.log("OpenAI response received. Length:", (advice || "").length)
+            console.log("Advice preview:", (advice || "").slice(0, 300).replace(/\n/g, ' '))
+        } catch (e) {
+            console.log("Failed to log OpenAI response preview", e)
+        }
 
         // 6. SAUVEGARDE (Correction : nom de colonne 'conseil' selon votre SQL)
         await supabase.from('conseil_semaine').insert({
