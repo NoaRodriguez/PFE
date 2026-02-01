@@ -48,13 +48,11 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
               <div className="flex items-center gap-2 mb-4">
                  <weeklyTip.icon className="w-5 h-5 text-[#00F65C]" />
                  <span className="text-xs font-bold uppercase tracking-widest text-[#00F65C] bg-[#00F65C]/10 px-2 py-1 rounded">
-                   {weeklyAdvice ? "VOTRE STRATÉGIE" : weeklyTip.subtitle}
+                   {weeklyAdvice ? "STRATÉGIE DE LA SEMAINE" : weeklyTip.subtitle}
                  </span>
               </div>
               
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
-                 {weeklyTip.title}
-              </h2>
+            
               <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 whitespace-pre-wrap"> 
                  {weeklyAdvice || weeklyTip.content}
               </div>
@@ -78,14 +76,10 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                         <Zap className="w-4 h-4 text-gray-900 dark:text-[#C1FB00]" />
                     </div>
                     {/* On utilise une couleur plus sombre en Light pour la lisibilité, ou on garde la couleur thème si c'est lisible */}
-                    <span className="text-gray-900 dark:text-[#C1FB00] text-xs font-bold uppercase tracking-widest">
+                    <span className="text-xs font-bold uppercase tracking-widest text-[#C1FB00] bg-[#00F65C]/10 px-2 py-1 rounded">
                       Conseil du jour
                     </span>
                  </div>
-
-                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
-                    {dailyAdvice ? "Stratégie 24h" : dailyTip.title}
-                 </h3>
                  
                  <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3 whitespace-pre-wrap">
                     {dailyAdvice ? dailyAdvice.split('\n')[0] : dailyTip.summary.replace(/\*\*/g, '')}
