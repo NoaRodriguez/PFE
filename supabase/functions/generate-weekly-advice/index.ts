@@ -127,18 +127,17 @@ Deno.serve(async (req) => {
         ${contextText}
         
         DIRECTIVES DE REDACTION : 
-        - Focus de ta semaine : Commence par 4 à 5 phrases maximum qui donnent le "LA" de la semaine. Identifie l'événement majeur (une grosse séance, une compétition ou la récupération) et explique à l'utilisateur quel doit être son "Mindset" nutritionnel.
+        - Focus de ta semaine : Commence par 2 à 3 phrases maximum qui donnent le "LA" de la semaine. Identifie l'événement majeur (une grosse séance, une compétition ou la récupération) et explique à l'utilisateur quel doit être son "Mindset" nutritionnel et aborde rapidement les autres séances prévues.
         - SI AUCUNE SÉANCE N'EST PRÉVUE : Ne sois pas générique. Encourage une semaine de "Régénération" basée sur l'assiette méditerranéenne, le maintien des bons lipides et la micro-nutrition pour réparer les tissus.
         - LOGIQUE DE PÉRIODISATION : 
         Semaine calme : Garde le curseur à 55% de glucides complexes.
         Prépa intense ou Compétition (J+3 ou J+6) : Annonce le passage à 70% pour saturer le glycogène
         - ALERTE INFLAMMATION : Si intense_count > 3, explique avec pédagogie que trop d'intensité sans "resucre" produit de l'IL-6 qui bloque l'absorption du fer via l'hepcidine
+        - Ne fais pas de mise en forme lourde, fonctionne seulement en texte brute, avec des tirets et/ou des emojis si nécessaire.
         
         FORMAT DE SORTIE :
-        Titre court avec Texte court de 2-3 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.[ne mentionne pas ce titre dans ta réponse]
-        Analyse de la Charge Hebdomadaire [ne mentionne pas ce titre dans ta réponse]
-        Calendrier Stratégique (J à J+6) [ne mentionne pas ce titre dans ta réponse]
-        Conseil Prévention [ne mentionne pas ce titre dans ta réponse]
+        Titre court 
+        Texte court de 2-3 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.[ne mentionne pas ce titre dans ta réponse]
         `
                 
         const chatResponse = await openai.chat.completions.create({
@@ -148,6 +147,8 @@ Deno.serve(async (req) => {
         })
 
         const advice = chatResponse.choices[0].message.content
+
+        console.log("Generated advice for user", advice)
 
         // Log brief info about the OpenAI response
         try {
