@@ -222,6 +222,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
   };
 
+  const triggerSessionAdvice = async (session_id: string | number, token: string) => {
+      console.log("Triggering session advice for session:", session_id);
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-session-advice', {
+            body: { session_id: session_id, force_update: true },
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (error) {
+            console.error("Error triggering session advice:", error);
+            return null;
+        }
+
+        if (data?.advice) {
+             console.log("Session advice generated:", data.advice);
+             return {
+                 avant: data.advice.conseil_avant,
+                 pendant: data.advice.conseil_pendant,
+                 apres: data.advice.conseil_apres
+             };
+        }
+      } catch (err) {
+          console.error("Exception triggering session advice:", err);
+      }
+      return null;
+  };
+
   // --- ADD SESSION : La logique clé ---
   const addSession = async (session: TrainingSession) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -278,6 +305,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (token) {
           triggerWeeklyIfRelevant(session.date, user.id, token);
           triggerDailyIfRelevant(session.date, user.id, token);
+
+          triggerSessionAdvice(sessionData.id, token).then((generatedAdvice) => {
+              if (generatedAdvice) {
+                   setSessions(prev => prev.map(s => 
+                       s.id === sessionData.id 
+                       ? { ...s, conseil: generatedAdvice } 
+                       : s
+                   ));
+              }
+          });
       }
     }
   };
@@ -307,7 +344,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .eq('id', session.id);
 
     if (!error) {
-      setSessions(prev => prev.map(s => s.id === session.id ? session : s));
+      setSessions(prev => prev.map(s => s.id === session.id ? { ...session, conseil: undefined } : s));
       // Triggers IA...
       const sessionAuth = await supabase.auth.getSession();
       const token = sessionAuth.data.session?.access_token;
@@ -318,6 +355,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
               triggerWeeklyIfRelevant(oldDate, user.id, token);
               triggerDailyIfRelevant(oldDate, user.id, token);
           }
+
+          triggerSessionAdvice(session.id, token).then((generatedAdvice) => {
+              if (generatedAdvice) {
+                   setSessions(prev => prev.map(s => 
+                       s.id === session.id 
+                       ? { ...s, conseil: generatedAdvice } 
+                       : s
+                   ));
+              }
+          });
       }
     } else {
       console.error("Erreur update session:", error);

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { useWeeklyAdvice } from '../hooks/useWeeklyAdvice';
 import { TrainingSession } from '../types'; // Import du type
 import { Competition } from '../types'; // Import du type
 import { Calendar, Activity, LogOut, Moon, Sun, Lightbulb, Trophy, Dumbbell, Zap, Shield, Scale, ChevronRight, X, Clock, AlignLeft, Pencil, MapPin} from 'lucide-react';
@@ -25,8 +24,6 @@ const isSameDay = (date1: Date | string, date2: Date | string) => {
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const { userProfile, signOut, sessions, competitions, getTodayNutrition, isDarkMode, toggleDarkMode, dailyAdvice } = useApp();
-
-  useWeeklyAdvice(userProfile?.id);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
