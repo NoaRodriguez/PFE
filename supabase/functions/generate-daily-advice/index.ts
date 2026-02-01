@@ -141,16 +141,16 @@ DIRECTIVES DE RÉDACTION :
 
 FORMAT DE SORTIE ATTENDU :
 
-🎯 Ton Mindset du jour : [Titre inspirant]
-[Texte court de 1 à 2 phrases sur l'objectif n°1 de la journée]
+🎯 Ton mindset du jour 
+Texte court de 1 à 2 phrases sur l'objectif n°1 de la journée
 
-🍽️ Ta Structure Alimentaire
-Petit-déjeuner : [Composition] — Focus : Vigilance et satiété.
-Déjeuner : [Composition] — Focus : Anti-inflammation (Colza).
-Dîner : [Composition] — Focus : Sommeil et recharge glycogénique.
+🍽️ Ta structure alimentaire
+- Petit-déjeuner : [Composition] — Focus : Vigilance et satiété.
+- Déjeuner : [Composition] — Focus : Anti-inflammation (Colza).
+- Dîner : [Composition] — Focus : Sommeil et recharge glycogénique.
 
-💡 Le Petit Plus de l'Expert
-[Conseil micro-nutrition spécifique : Ex : 2 noix du Brésil pour le sélénium, ou importance du Magnésium ce soir si la séance d'hier était nerveuse.]
+💡 Le petit plus de l'expert
+Conseil micro-nutrition spécifique : Ex : 2 noix du Brésil pour le sélénium, ou importance du Magnésium ce soir si la séance d'hier était nerveuse.
 `
 
         const chatResponse = await openai.chat.completions.create({

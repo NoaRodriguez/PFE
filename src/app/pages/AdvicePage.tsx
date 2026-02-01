@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
+import { useApp } from '../context/AppContext'; 
 import { nutritionCategories, dailyTip, weeklyTip } from '../data/nutritionCategories';
 import { 
   ArrowLeft, ArrowRight, BookOpen, Clock, Flame, ChevronRight, 
@@ -24,6 +25,7 @@ const getIngredientIcon = (name: string) => {
 
 // AJOUT DE returnTo DANS LES PROPS
 export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: { onNavigate: (page: string) => void, initialCategoryId?: string, returnTo?: string }) {
+  const { weeklyAdvice, dailyAdvice } = useApp(); ////////////////////////////////////////
   const [showTip, setShowTip] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
@@ -66,16 +68,13 @@ export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: 
               <div className="flex items-center gap-2 mb-4">
                  <weeklyTip.icon className="w-5 h-5 text-[#00F65C]" />
                  <span className="text-xs font-bold uppercase tracking-widest text-[#00F65C] bg-[#00F65C]/10 px-2 py-1 rounded">
-                   {weeklyTip.subtitle}
+                   {weeklyAdvice ? "STRATÉGIE DE LA SEMAINE" : weeklyTip.subtitle}
                  </span>
               </div>
               
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
-                 {weeklyTip.title}
-              </h2>
-              <p className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
-                 {weeklyTip.content}
-              </p>
+              <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 whitespace-pre-wrap"> 
+                 {weeklyAdvice || weeklyTip.content}
+              </div>
 
               <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300 font-medium bg-gray-100 dark:bg-slate-800 w-fit px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700/50 shadow-sm">
                  Objectif : Régularité
@@ -95,18 +94,15 @@ export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: 
                     <div className="bg-[#C1FB00]/10 p-2 rounded-lg border border-[#C1FB00]/20">
                         <Zap className="w-4 h-4 text-gray-900 dark:text-[#C1FB00]" />
                     </div>
-                    <span className="text-gray-900 dark:text-[#C1FB00] text-xs font-bold uppercase tracking-widest">
+                    <span className="text-xs font-bold uppercase tracking-widest text-[#C1FB00] bg-[#00F65C]/10 px-2 py-1 rounded">
                       Conseil du jour
                     </span>
                  </div>
-
-                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
-                    {dailyTip.title}
-                 </h3>
                  
-                 <p className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
-                    {dailyTip.summary.replace(/\*\*/g, '')}
-                 </p>
+                 <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3 whitespace-pre-wrap">
+                    {dailyAdvice ? dailyAdvice.split('\n')[0] : dailyTip.summary.replace(/\*\*/g, '')}
+                 </div>
+                 
                  
                  <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-gray-100 dark:bg-[#C1FB00]/10 text-gray-900 dark:text-[#C1FB00] border border-gray-200 dark:border-[#C1FB00]/20 px-4 py-2.5 rounded-xl group-hover:bg-gray-200 dark:group-hover:bg-[#C1FB00]/20 transition-colors">
                     Lire la suite <ArrowRight className="w-3 h-3" />
@@ -237,13 +233,23 @@ export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: 
                 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#C1FB00] opacity-5 blur-[60px] pointer-events-none" />
-                    <p className="text-lg font-medium text-gray-900 dark:text-white mb-6 leading-relaxed border-b border-gray-100 dark:border-slate-800 pb-6">
-                       {dailyTip.summary.replace(/\*\*/g, '')}
-                    </p>
-                    <div 
-                        className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
-                    />
+                    {dailyAdvice ? (
+                        <div 
+                            className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed whitespace-pre-wrap"
+                        >
+                            {dailyAdvice}
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-lg font-medium text-gray-900 dark:text-white mb-6 leading-relaxed border-b border-gray-100 dark:border-slate-800 pb-6">
+                               {dailyTip.summary.replace(/\*\*/g, '')}
+                            </p>
+                            <div 
+                                className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
+                            />
+                        </>
+                    )}
                 </div>
              </div>
 

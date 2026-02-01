@@ -133,11 +133,12 @@ Deno.serve(async (req) => {
         Semaine calme : Garde le curseur à 55% de glucides complexes.
         Prépa intense ou Compétition (J+3 ou J+6) : Annonce le passage à 70% pour saturer le glycogène
         - ALERTE INFLAMMATION : Si intense_count > 3, explique avec pédagogie que trop d'intensité sans "resucre" produit de l'IL-6 qui bloque l'absorption du fer via l'hepcidine
-        - Ne fais pas de mise en forme lourde, fonctionne seulement en texte brute, avec des tirets et/ou des emojis si nécessaire.
+        - Ne fais pas de mise en forme, fonctionne seulement en texte brute et avec des emojis si nécessaire.
         
         FORMAT DE SORTIE :
-        Titre court 
-        Texte court de 2-3 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.[ne mentionne pas ce titre dans ta réponse]
+        Texte court de 1-2 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.[ne mentionne pas ce titre dans ta réponse]
+        📊 Analyse de la charge hebdomadaire
+        📅 Calendrier stratégique (J à J+6)
         `
                 
         const chatResponse = await openai.chat.completions.create({

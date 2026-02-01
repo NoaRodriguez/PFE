@@ -90,7 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadUserData = async (userId: string) => {
     // 1. Profile
-    const { data: profileData } = await supabase.from('profil_utilisateur').select('*').eq('id', userId).maybeSingle();
+    const { data: profileData, error: profileError  } = await supabase.from('profil_utilisateur').select('*').eq('id', userId).maybeSingle();
     const { data: macroData } = await supabase.from('macronutriment').select('*').eq('id', userId).maybeSingle();
 
     if (profileData) {
@@ -115,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     // 2. SÉANCES + CONSEILS (JOIN)
     // On récupère les séances ET les conseils liés dans la table conseil_seance
-    const { data: sessionData } = await supabase
+    const { data: sessionData, error: sessionError } = await supabase
       .from('seance')
       .select('*, conseil_seance(*)') // La jointure magique
       .eq('id_utilisateur', userId)
@@ -148,7 +148,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     // 3. Competitions
-    const { data: compData } = await supabase.from('competition').select('*').eq('id_utilisateur', userId);
+    const { data: compData, error: compError } = await supabase.from('competition').select('*').eq('id_utilisateur', userId);
     if (compData) {
       setCompetitions(compData.map((c: any) => ({
         id: c.id,
@@ -168,11 +168,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     const { data: adviceData } = await supabase.from('conseil_semaine').select('conseil').eq('id_utilisateur', userId).gte('date_creation', `${today}T00:00:00`).order('date_creation', { ascending: false }).limit(1).maybeSingle();
     if (adviceData) setWeeklyAdvice(adviceData.conseil);
-    else supabase.functions.invoke('generate-weekly-advice', { body: { user_id: userId }, headers: { Authorization: `Bearer ${token}` } }).then(({ data }) => { if (data?.advice) setWeeklyAdvice(data.advice); });
+    else supabase.functions.invoke('generate-weekly-advice', { 
+      body: { user_id: userId }, 
+      headers: { Authorization: `Bearer ${token}` } 
+    }).then(({ data }) => { if (data?.advice) setWeeklyAdvice(data.advice); });
 
     const { data: dailyAdviceData } = await supabase.from('conseil_jour').select('conseil').eq('id_utilisateur', userId).gte('date_creation', `${today}T00:00:00`).order('date_creation', { ascending: false }).limit(1).maybeSingle();
     if (dailyAdviceData) setDailyAdvice(dailyAdviceData.conseil);
-    else supabase.functions.invoke('generate-daily-advice', { body: { user_id: userId }, headers: { Authorization: `Bearer ${token}` } }).then(({ data }) => { if (data?.advice) setDailyAdvice(data.advice); });
+    else supabase.functions.invoke('generate-daily-advice', { 
+      body: { user_id: userId }, 
+      headers: { Authorization: `Bearer ${token}` } 
+    }).then(({ data }) => { if (data?.advice) setDailyAdvice(data.advice); });
   };
 
   const parseJsonSafe = (input: string | any[] | null) => {
