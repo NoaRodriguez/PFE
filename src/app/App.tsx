@@ -5,12 +5,12 @@ import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import AdvicePage from './pages/AdvicePage';
 import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
+import ProfileSetupPage from './pages/ProfileSetupPage';
 import AddSessionPage from './pages/AddSessionPage';
 import EditSessionPage from './pages/EditSessionPage';
 import AddCompetitionPage from './pages/AddCompetitionPage';
 import EditCompetitionPage from './pages/EditCompetitionPage';
-import LoginPage from './pages/LoginPage';
-import ProfileSetupPage from './pages/ProfileSetupPage';
 
 function AppContent() {
   const { isLoggedIn, userProfile } = useApp();
@@ -20,77 +20,54 @@ function AppContent() {
     return <LoginPage />;
   }
 
-  if (isLoggedIn && !userProfile) {
-    return <ProfileSetupPage />;
+  if (isLoggedIn && userProfile && !userProfile.prenom) {
+    return <ProfileSetupPage onComplete={() => setCurrentPage('dashboard')} />;
   }
 
-  // --- Gestion des pages d'édition ---
-  if (currentPage.startsWith('edit-session:')) {
-    const sessionId = currentPage.split(':')[1];
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <EditSessionPage sessionId={sessionId} onNavigate={setCurrentPage} />
-        <BottomNav currentPage="calendar" onNavigate={setCurrentPage} />
-      </div>
-    );
-  }
-
-  if (currentPage.startsWith('edit-competition:')) {
-    const competitionId = currentPage.split(':')[1];
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <EditCompetitionPage competitionId={competitionId} onNavigate={setCurrentPage} />
-        <BottomNav currentPage="calendar" onNavigate={setCurrentPage} />
-      </div>
-    );
-  }
-
-  // --- Gestion des pages d'ajout ---
-  if (currentPage.startsWith('add-session:')) {
-    const date = currentPage.split(':')[1];
-    return <AddSessionPage onNavigate={setCurrentPage} initialDate={date} />;
-  }
-
-  if (currentPage.startsWith('add-competition:')) {
-    const date = currentPage.split(':')[1];
-    return <AddCompetitionPage onNavigate={setCurrentPage} initialDate={date} />;
-  }
+  // Découpage de l'URL : page:param1:param2
+  const [page, param1, param2] = currentPage.split(':');
 
   const renderPage = () => {
-    switch (currentPage) {
+    switch (page) {
       case 'dashboard':
         return <DashboardPage onNavigate={setCurrentPage} />;
+      
       case 'calendar':
         return <CalendarPage onNavigate={setCurrentPage} />;
+      
       case 'advice':
-        return <AdvicePage onNavigate={setCurrentPage} />;
+        // MODIF ICI : On passe param2 comme "returnTo"
+        return <AdvicePage onNavigate={setCurrentPage} initialCategoryId={param1} returnTo={param2} />;
+      
       case 'profile':
         return <ProfilePage onNavigate={setCurrentPage} />;
+      
       case 'add-session':
-        return <AddSessionPage onNavigate={setCurrentPage} />;
+        return <AddSessionPage onNavigate={setCurrentPage} initialDate={param1} returnTo={param2} />;
+      
+      case 'edit-session':
+        return <EditSessionPage sessionId={param1} onNavigate={setCurrentPage} returnTo={param2} />;
+      
       case 'add-competition':
-        return <AddCompetitionPage onNavigate={setCurrentPage} />;
+        return <AddCompetitionPage onNavigate={setCurrentPage} initialDate={param1} returnTo={param2} />;
+      
+      case 'edit-competition':
+        return <EditCompetitionPage competitionId={param1} onNavigate={setCurrentPage} returnTo={param2} />;
+        
       default:
         return <DashboardPage onNavigate={setCurrentPage} />;
     }
   };
 
-  // On vérifie si on doit afficher la barre de navigation
-  const showBottomNav = !currentPage.startsWith('add-') && !currentPage.startsWith('edit-');
+  const showBottomNav = ['dashboard', 'calendar', 'advice', 'profile'].includes(page);
 
   return (
-    // CORRECTION MAJEURE : On utilise min-h-screen au lieu de h-screen
-    // Et on laisse le navigateur gérer le scroll (plus de overflow-y-auto ici)
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
-      
-      {/* Contenu principal qui grandit selon le besoin */}
-      <div className={`flex-1 ${showBottomNav ? 'pb-24' : ''}`}>
+    <div className="bg-white dark:bg-gray-950 min-h-screen text-gray-900 dark:text-white font-sans transition-colors duration-200">
+      <main className={showBottomNav ? "pb-20" : ""}>
         {renderPage()}
-      </div>
-
-      {/* Barre de navigation fixe en bas */}
+      </main>
       {showBottomNav && (
-        <BottomNav currentPage={currentPage} onNavigate={setCurrentPage} />
+        <BottomNav currentPage={page} onNavigate={setCurrentPage} />
       )}
     </div>
   );

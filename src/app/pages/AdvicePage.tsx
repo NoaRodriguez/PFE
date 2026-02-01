@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
-import { useApp } from '../context/AppContext'; // [NEW] relative path correction if needed
 import { nutritionCategories, dailyTip, weeklyTip } from '../data/nutritionCategories';
 import { 
   ArrowLeft, ArrowRight, BookOpen, Clock, Flame, ChevronRight, 
@@ -23,39 +22,60 @@ const getIngredientIcon = (name: string) => {
   return Utensils;
 };
 
-export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { weeklyAdvice, dailyAdvice } = useApp(); // [NEW] Use dynamic advice
+// AJOUT DE returnTo DANS LES PROPS
+export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: { onNavigate: (page: string) => void, initialCategoryId?: string, returnTo?: string }) {
   const [showTip, setShowTip] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialCategoryId) {
+      setSelectedCategoryId(initialCategoryId);
+    }
+  }, [initialCategoryId]);
 
   const selectedCategory = nutritionCategories.find(c => c.id === selectedCategoryId);
   const dailyCategory = nutritionCategories.find(c => c.id === dailyTip.categoryLink);
 
+  // LOGIQUE DE RETOUR INTELLIGENTE
+  const handleCloseModal = () => {
+    // Si on vient du dashboard, on y retourne directement
+    if (returnTo === 'dashboard') {
+      onNavigate('dashboard');
+    } else {
+      // Sinon, comportement normal : on ferme juste la modale
+      setSelectedCategoryId(null);
+    }
+  };
+
   return (
-    // FOND : Blanc (Light) / Slate-950 (Dark)
     <div className="pb-24 px-4 max-w-md mx-auto min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white overflow-x-hidden transition-colors duration-300">
       
       <PageHeader title="Centre Nutrition" subtitle="Performance & Santé" />
 
+      {/* ... (Reste de l'affichage principal inchangé) ... */}
+      {/* Je ne remets pas tout le code du corps de page pour rester concis, 
+          le seul changement important est dans le composant Modal ci-dessous */}
+
       <div className="space-y-8 mt-4 relative z-0">
         
-        {/* --- 1. CONSEIL SEMAINE --- */}
+        {/* CONSEIL SEMAINE */}
         <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 shadow-xl dark:shadow-2xl group transition-all">
-           {/* Glow adapté */}
            <div className="absolute -top-10 -right-10 w-48 h-48 bg-[#00F65C] opacity-10 dark:opacity-20 blur-[80px] rounded-full pointer-events-none group-hover:opacity-20 dark:group-hover:opacity-30 transition-opacity duration-500" />
            
            <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
                  <weeklyTip.icon className="w-5 h-5 text-[#00F65C]" />
                  <span className="text-xs font-bold uppercase tracking-widest text-[#00F65C] bg-[#00F65C]/10 px-2 py-1 rounded">
-                   {weeklyAdvice ? "STRATÉGIE DE LA SEMAINE" : weeklyTip.subtitle}
+                   {weeklyTip.subtitle}
                  </span>
               </div>
               
-            
-              <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 whitespace-pre-wrap"> 
-                 {weeklyAdvice || weeklyTip.content}
-              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
+                 {weeklyTip.title}
+              </h2>
+              <p className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
+                 {weeklyTip.content}
+              </p>
 
               <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300 font-medium bg-gray-100 dark:bg-slate-800 w-fit px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700/50 shadow-sm">
                  Objectif : Régularité
@@ -63,7 +83,7 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
            </div>
         </div>
 
-        {/* --- 2. CONSEIL DU JOUR --- */}
+        {/* CONSEIL DU JOUR */}
         <div 
           onClick={() => setShowTip(true)}
           className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 shadow-lg dark:shadow-xl cursor-pointer group active:scale-[0.98] transition-all hover:border-[#C1FB00]/30"
@@ -75,15 +95,18 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                     <div className="bg-[#C1FB00]/10 p-2 rounded-lg border border-[#C1FB00]/20">
                         <Zap className="w-4 h-4 text-gray-900 dark:text-[#C1FB00]" />
                     </div>
-                    {/* On utilise une couleur plus sombre en Light pour la lisibilité, ou on garde la couleur thème si c'est lisible */}
-                    <span className="text-xs font-bold uppercase tracking-widest text-[#C1FB00] bg-[#00F65C]/10 px-2 py-1 rounded">
+                    <span className="text-gray-900 dark:text-[#C1FB00] text-xs font-bold uppercase tracking-widest">
                       Conseil du jour
                     </span>
                  </div>
+
+                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
+                    {dailyTip.title}
+                 </h3>
                  
-                 <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3 whitespace-pre-wrap">
-                    {dailyAdvice ? dailyAdvice.split('\n')[0] : dailyTip.summary.replace(/\*\*/g, '')}
-                 </div>
+                 <p className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
+                    {dailyTip.summary.replace(/\*\*/g, '')}
+                 </p>
                  
                  <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-gray-100 dark:bg-[#C1FB00]/10 text-gray-900 dark:text-[#C1FB00] border border-gray-200 dark:border-[#C1FB00]/20 px-4 py-2.5 rounded-xl group-hover:bg-gray-200 dark:group-hover:bg-[#C1FB00]/20 transition-colors">
                     Lire la suite <ArrowRight className="w-3 h-3" />
@@ -91,7 +114,7 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
             </div>
         </div>
 
-        {/* --- 3. LISTE DES PILIERS --- */}
+        {/* LISTE DES PILIERS */}
         <div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 pl-1 flex items-center gap-2">
             Les Piliers de la Nutrition
@@ -106,10 +129,7 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                 className="cursor-pointer relative rounded-[2rem] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 z-10 overflow-hidden shadow-lg group hover:border-gray-300 dark:hover:border-slate-700 transition-all duration-300"
                 style={{ borderColor: 'transparent' }} 
               >
-                  {/* Background Coloré Subtil */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-5 transition-opacity group-hover:opacity-15`} />
-                  
-                  {/* Bordure colorée au survol */}
                   <div 
                     className="absolute inset-0 border-2 border-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                     style={{ borderColor: `${category.themeColor}40` }}
@@ -120,7 +140,7 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                         <div className="flex items-center gap-4">
                             <span 
                                 className="text-3xl p-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm transition-transform group-hover:scale-105 bg-gray-50 dark:bg-transparent"
-                                style={{ backgroundColor: `rgba(var(--theme-rgb), 0.1)` }} // Fallback simple
+                                style={{ backgroundColor: `rgba(var(--theme-rgb), 0.1)` }}
                             >
                                 <category.icon 
                                     className="w-8 h-8" 
@@ -184,7 +204,6 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
         </div>
       </div>
 
-      {/* --- MODALE 1 : TIP DU JOUR --- */}
       <AnimatePresence>
         {showTip && (
           <motion.div 
@@ -218,24 +237,13 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#C1FB00] opacity-5 blur-[60px] pointer-events-none" />
-                    
-                    {dailyAdvice ? (
-                        <div 
-                            className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed whitespace-pre-wrap"
-                        >
-                            {dailyAdvice}
-                        </div>
-                    ) : (
-                        <>
-                            <p className="text-lg font-medium text-gray-900 dark:text-white mb-6 leading-relaxed border-b border-gray-100 dark:border-slate-800 pb-6">
-                               {dailyTip.summary.replace(/\*\*/g, '')}
-                            </p>
-                            <div 
-                                className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
-                            />
-                        </>
-                    )}
+                    <p className="text-lg font-medium text-gray-900 dark:text-white mb-6 leading-relaxed border-b border-gray-100 dark:border-slate-800 pb-6">
+                       {dailyTip.summary.replace(/\*\*/g, '')}
+                    </p>
+                    <div 
+                        className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: dailyTip.longContent }}
+                    />
                 </div>
              </div>
 
@@ -254,7 +262,6 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
         )}
       </AnimatePresence>
 
-      {/* --- MODALE 2 : DÉTAIL CATÉGORIE --- */}
       <AnimatePresence>
         {selectedCategoryId && selectedCategory && (
             <motion.div 
@@ -265,8 +272,9 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                 className="fixed inset-0 z-[110] bg-gray-50 dark:bg-slate-950 flex flex-col overflow-hidden"
             >
                 <div className="relative p-6 pt-10 pb-6 shrink-0 border-b border-gray-200 dark:border-slate-800/50 bg-gray-50 dark:bg-slate-950 z-20 flex items-center justify-between">
+                     {/* BOUTON RETOUR : Utilise la nouvelle logique */}
                      <button 
-                        onClick={() => setSelectedCategoryId(null)}
+                        onClick={handleCloseModal}
                         className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors border border-gray-200 dark:border-slate-800 text-sm font-bold text-gray-700 dark:text-slate-300"
                     >
                         <ArrowLeft className="w-4 h-4" /> Retour
@@ -339,7 +347,6 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                                 return (
                                     <div key={ing.id} className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm hover:border-gray-300 dark:hover:border-slate-700 transition-colors">
                                         <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-slate-950 flex items-center justify-center flex-shrink-0 relative border border-gray-200 dark:border-slate-800">
-                                            {/* Icône aliment colorée selon la catégorie */}
                                             <Icon 
                                                 className="w-7 h-7" 
                                                 strokeWidth={1.5} 
@@ -350,17 +357,16 @@ export default function AdvicePage({ onNavigate }: { onNavigate: (page: string) 
                                         <div className="flex-1">
                                             <p className="font-bold text-lg text-gray-900 dark:text-white mb-1">{ing.name}</p>
                                             
-                                            {/* MACROS AUX BONNES COULEURS SOMA */}
                                             <div className="flex items-center gap-3 text-xs font-medium text-gray-500 dark:text-slate-500">
                                                 <span 
                                                     className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#00F65C]/10"
-                                                    style={{ color: '#00F65C' }} // On force la couleur pour le contraste, c'est ok en light
+                                                    style={{ color: '#00F65C' }}
                                                 >
                                                     P: {ing.proteins || 0}g
                                                 </span>
                                                 <span 
                                                     className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#C1FB00]/10"
-                                                    style={{ color: '#A0D000' }} // Jaune plus foncé pour light mode ? Non on garde le style
+                                                    style={{ color: '#A0D000' }}
                                                 >
                                                     <span className="dark:text-[#C1FB00] text-[#7da300]">G: {ing.carbs || 0}g</span>
                                                 </span>

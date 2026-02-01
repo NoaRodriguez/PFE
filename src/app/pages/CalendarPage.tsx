@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, Pencil, Lightbulb } from 'lucide-react'; // Ajout de Lightbulb
+import { Plus, Pencil, Lightbulb } from 'lucide-react';
 import VisualCalendar from '../components/VisualCalendar';
 import PageHeader from '../components/PageHeader';
 
@@ -29,6 +29,7 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
   const selectedDaySessions = sessions.filter(s => isSameDay(s.date, selectedDate));
   const selectedDayCompetitions = competitions.filter(c => isSameDay(c.date, selectedDate));
 
+  // Fonction utilitaire pour la navigation
   const getFormattedDate = () => {
     const offset = selectedDate.getTimezoneOffset();
     const date = new Date(selectedDate.getTime() - (offset * 60 * 1000));
@@ -94,20 +95,20 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
                 onClick={() => onNavigate(`edit-session:${session.id}`)}
                 className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
               >
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white">{session.titre}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{session.sport} • {session.type}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-bold text-gray-900 dark:text-white">{session.durée} min</p>
-                    <button className="p-2 text-gray-400 hover:text-[#00F65C] transition-colors rounded-full hover:bg-[#00F65C]/10">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                  </div>
+                <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-white">{session.titre}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{session.sport} • {session.type}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="font-bold text-gray-900 dark:text-white">{session.durée} min</p>
+                      <button className="p-2 text-gray-400 hover:text-[#00F65C] transition-colors rounded-full hover:bg-[#00F65C]/10">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </div>
                 </div>
 
-                {/* --- BLOC CONSEIL (AJOUTÉ) --- */}
+                {/* ENCADRÉ CONSEIL */}
                 {session.conseil && (
                   <div className="mt-3 p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-1.5">
                      <div className="flex items-center gap-2 mb-1 border-b border-gray-200 dark:border-gray-700 pb-1.5">
@@ -128,14 +129,13 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
                      </div>
                   </div>
                 )}
-                {/* ----------------------------- */}
-
               </div>
             ))}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3 mt-4">
+          {/* MODIF ICI : On utilise getFormattedDate() dans le lien de navigation */}
           <button
             onClick={() => onNavigate(`add-session:${getFormattedDate()}`)}
             className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-[#00F65C] to-[#C1FB00] rounded-2xl text-[#292929] font-bold shadow-lg hover:opacity-90 transition-opacity"

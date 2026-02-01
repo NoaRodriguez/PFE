@@ -3,7 +3,12 @@ import { useApp } from '../context/AppContext';
 import { UserGoal, SportType, UserProfile, Gender } from '../types';
 import { ChevronRight, ChevronLeft, Activity, Trophy, Heart, Flame, Timer, Check, User, LogOut } from 'lucide-react';
 
-export default function ProfileSetupPage() {
+// AJOUT DE L'INTERFACE PROPS
+interface ProfileSetupPageProps {
+  onComplete?: () => void;
+}
+
+export default function ProfileSetupPage({ onComplete }: ProfileSetupPageProps) {
   const { setUserProfile, signOut } = useApp();
   const [step, setStep] = useState(1);
 
@@ -20,7 +25,6 @@ export default function ProfileSetupPage() {
 
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Helper pour empêcher les valeurs négatives
   const handlePositiveNumber = (
     value: string,
     setter: (val: string) => void
@@ -72,9 +76,7 @@ export default function ProfileSetupPage() {
   const finishSetup = () => {
     setIsCalculating(true);
 
-    // Simulation de calcul intelligent...
     setTimeout(async () => {
-      const age = calculateAge(birthDate);
       const weightNum = parseFloat(weight);
 
       // Calcul basique des besoins
@@ -83,18 +85,15 @@ export default function ProfileSetupPage() {
       const carbs = Math.round(weightNum * 4);
 
       const profile: UserProfile = {
-        prenom: name, // mapped from 'name' variable
+        prenom: name,
         date_naissance: birthDate,
         poids: weightNum,
         taille: parseFloat(height),
         gender,
-        frequence_entrainement: trainingHours, // string
+        frequence_entrainement: trainingHours,
         objectifs: selectedGoals,
         sports: selectedSports,
         customSports: [],
-        // trainingHoursPerWeek removed or mapped? I mapped it to frequence_entrainement (string).
-        // UserProfile interface no longer has name/age/trainingHoursPerWeek?
-        // Let's check my types.ts update.
         nutritionGoals: {
           proteines: proteins,
           glucides: carbs,
@@ -103,13 +102,14 @@ export default function ProfileSetupPage() {
       };
 
       await setUserProfile(profile);
-      // Redirect handled by AppContext or App wrapper?
-      // Actually usually navigation happens.
-      // But since login(profile) is gone, we might need to rely on state change.
+      
+      // APPEL DU CALLBACK POUR REDIRIGER
+      if (onComplete) {
+        onComplete();
+      }
     }, 2000);
   };
 
-  // Écran de chargement "Calcul"
   if (isCalculating) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-center p-6">
@@ -130,7 +130,6 @@ export default function ProfileSetupPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
-      {/* Progress Bar */}
       <div className="h-1.5 bg-gray-100 dark:bg-gray-900">
         <div
           className="h-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00] transition-all duration-500"
@@ -139,7 +138,6 @@ export default function ProfileSetupPage() {
       </div>
 
       <div className="flex-1 flex flex-col p-6 max-w-md mx-auto w-full">
-        {/* Header Navigation */}
         <div className="flex items-center justify-between mb-8">
           {step > 1 ? (
             <button
@@ -149,9 +147,7 @@ export default function ProfileSetupPage() {
               <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-400" />
             </button>
           ) : (
-            <div className="w-10">
-              {/* Placeholder to keep title centered if no back button */}
-            </div>
+            <div className="w-10"></div>
           )}
           <span className="text-xs font-medium text-gray-400 dark:text-gray-600 uppercase tracking-wider">
             Étape {step} sur 4
@@ -167,7 +163,6 @@ export default function ProfileSetupPage() {
           </div>
         </div>
 
-        {/* STEP 1: INFORMATIONS PERSONNELLES */}
         {step === 1 && (
           <div className="flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
@@ -191,7 +186,6 @@ export default function ProfileSetupPage() {
                 />
               </div>
 
-              {/* Genre */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Genre
@@ -265,7 +259,6 @@ export default function ProfileSetupPage() {
           </div>
         )}
 
-        {/* STEP 2: OBJECTIFS */}
         {step === 2 && (
           <div className="flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
@@ -295,7 +288,6 @@ export default function ProfileSetupPage() {
                     ? 'bg-[#00F65C] text-[#292929]'
                     : 'bg-white dark:bg-gray-800'
                     }`}>
-                    {/* CORRECTION ERREUR TS : on retire size et on utilise className */}
                     {React.cloneElement(goal.icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
                   </div>
                   <span className="font-semibold flex-1 text-left">{goal.label}</span>
@@ -311,7 +303,6 @@ export default function ProfileSetupPage() {
           </div>
         )}
 
-        {/* STEP 3: SPORTS */}
         {step === 3 && (
           <div className="flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
@@ -349,7 +340,6 @@ export default function ProfileSetupPage() {
           </div>
         )}
 
-        {/* STEP 4: FRÉQUENCE */}
         {step === 4 && (
           <div className="flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
@@ -388,11 +378,9 @@ export default function ProfileSetupPage() {
           </div>
         )}
 
-        {/* Next Button */}
         <div className="pt-6">
           <button
             onClick={step === 4 ? finishSetup : handleNext}
-            // ICI: On applique le dégradé "SOMA" à la place du noir/blanc
             className="w-full bg-gradient-to-r from-[#00F65C] via-[#C1FB00] to-[#F57BFF] text-[#292929] py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={
               (step === 1 && (!name || !birthDate || !weight || !height)) ||
