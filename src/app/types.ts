@@ -1,9 +1,9 @@
 export type UserGoal =
-  | 'reprise' // Reprendre le sport
-  | 'hygiene' // Avoir une bonne hygiène de vie
-  | 'competition' // Préparer une compétition
-  | 'performance' // Améliorer mes perfs
-  | 'perte-poids'; // Perte de poids
+  | 'reprise'
+  | 'hygiene'
+  | 'competition'
+  | 'performance'
+  | 'perte-poids';
 
 export type SportType =
   | 'course'
@@ -20,7 +20,7 @@ export type SessionType =
   | 'tempo'
   | 'recuperation'
   | 'interval'
-  | 'specific'; // Ajouté pour compatibilité
+  | 'specific';
 
 export type Gender = 'male' | 'female';
 
@@ -40,28 +40,36 @@ export interface UserProfile {
     glucides: number;
     lipides: number;
   };
-  vma?: number; // Ajout pour compatibilité
-  ftp?: number; // Ajout pour compatibilité
+  vma?: number;
+  ftp?: number;
+}
+
+// Nouvelle interface pour le conseil structuré
+export interface SessionAdviceData {
+  avant: string;
+  pendant: string;
+  apres: string;
 }
 
 export interface TrainingSession {
-  id: string | number; // String ou Number pour compatibilité Supabase
+  id: string | number;
   id_utilisateur?: string;
-  date: Date | string; // Date ou String pour gérer les deux formats
+  date: Date | string;
   titre: string;
   sport: SportType;
   durée: number;
   type: SessionType;
   description?: string;
-  intensité: number; // Mis en number pour ton Slider (0-3)
-  période_journée: string; // String pour être plus souple ('matin', 'soir', etc.)
+  intensité: number;
+  période_journée: string;
+  conseil?: SessionAdviceData; // <--- On utilise l'objet structuré ici
 }
 
 export interface Competition {
   id: string | number;
   id_utilisateur?: string;
   date: Date | string;
-  nom: string; // Nom obligatoire pour l'affichage
+  nom: string;
   sport: SportType;
   distance: number;
   durée?: number;
@@ -77,7 +85,6 @@ export interface Ingredient {
   carbs: number;
   fats: number;
   category: string;
-  // --- NOUVEAUX CHAMPS (Optionnels pour ne pas casser l'existant) ---
   calories?: number;
   image?: string;
   type?: 'protein' | 'carb' | 'fat' | 'fiber';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Lightbulb } from 'lucide-react'; // Ajout de Lightbulb
 import VisualCalendar from '../components/VisualCalendar';
 import PageHeader from '../components/PageHeader';
 
@@ -36,10 +36,8 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
   };
 
   return (
-    // CORRECTION : Suppression de 'pt-4' pour remonter le contenu au même niveau que les autres pages
     <div className="pb-24 px-4 max-w-md mx-auto min-h-screen bg-gray-50 dark:bg-gray-950">
       
-      {/* Ajout du sous-titre pour la cohérence */}
       <PageHeader 
         title="Calendrier" 
         subtitle="Planifiez vos séances et compétitions"
@@ -94,18 +92,44 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
               <div 
                 key={session.id}
                 onClick={() => onNavigate(`edit-session:${session.id}`)}
-                className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
               >
-                <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">{session.titre}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{session.sport} • {session.type}</p>
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white">{session.titre}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{session.sport} • {session.type}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <p className="font-bold text-gray-900 dark:text-white">{session.durée} min</p>
+                    <button className="p-2 text-gray-400 hover:text-[#00F65C] transition-colors rounded-full hover:bg-[#00F65C]/10">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <p className="font-bold text-gray-900 dark:text-white">{session.durée} min</p>
-                  <button className="p-2 text-gray-400 hover:text-[#00F65C] transition-colors rounded-full hover:bg-[#00F65C]/10">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                </div>
+
+                {/* --- BLOC CONSEIL (AJOUTÉ) --- */}
+                {session.conseil && (
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-1.5">
+                     <div className="flex items-center gap-2 mb-1 border-b border-gray-200 dark:border-gray-700 pb-1.5">
+                        <div className="bg-yellow-400/20 p-1 rounded-md">
+                            <Lightbulb className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <span className="text-[9px] font-bold uppercase text-gray-500 tracking-wider">Nutrition Performance</span>
+                     </div>
+                     <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
+                        <span className="font-bold text-[#00F65C]">Avant:</span> 
+                        <span className="text-gray-700 dark:text-gray-300 leading-snug">{session.conseil.avant}</span>
+                        
+                        <span className="font-bold text-[#C1FB00]">Pendant:</span> 
+                        <span className="text-gray-700 dark:text-gray-300 leading-snug">{session.conseil.pendant}</span>
+                        
+                        <span className="font-bold text-[#F57BFF]">Après:</span> 
+                        <span className="text-gray-700 dark:text-gray-300 leading-snug">{session.conseil.apres}</span>
+                     </div>
+                  </div>
+                )}
+                {/* ----------------------------- */}
+
               </div>
             ))}
           </div>
