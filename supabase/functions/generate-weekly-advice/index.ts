@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         - ALERTE INFLAMMATION : Si intense_count > 3, explique avec pédagogie que trop d'intensité sans "resucre" produit de l'IL-6 qui bloque l'absorption du fer via l'hepcidine
         
         FORMAT DE SORTIE :
-        [Texte court de 4-5 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.]
+        [Titre court avec Texte court de 4-5 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.]
         1. Analyse de la Charge Hebdomadaire
         2. Calendrier Stratégique (J à J+6)
         3. Conseil Prévention
