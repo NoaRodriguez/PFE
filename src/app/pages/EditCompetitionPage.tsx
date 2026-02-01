@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ChevronLeft, Trash2, Save, Trophy, MapPin, Clock } from 'lucide-react';
+import { ChevronLeft, Trash2, Save, Trophy, MapPin, Clock, Gauge } from 'lucide-react';
 import { SportType } from '../types';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -21,9 +21,18 @@ export default function EditCompetitionPage({ competitionId, onNavigate, returnT
   const [sport, setSport] = useState<SportType>(competition?.sport || 'course');
   const [distance, setDistance] = useState(competition?.distance.toString() || '');
   const [durée, setDurée] = useState(competition?.durée?.toString() || '');
+  const [intensité, setIntensité] = useState(competition?.intensité?.toString() || '0');
+  const formatDateLocal = (dateInput: Date | string) => {
+    const d = new Date(dateInput);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [date, setDate] = useState(
     competition?.date 
-      ? new Date(competition.date).toISOString().split('T')[0] 
+      ? formatDateLocal(competition.date)
       : new Date().toISOString().split('T')[0]
   );
 
@@ -47,6 +56,7 @@ export default function EditCompetitionPage({ competitionId, onNavigate, returnT
       sport,
       distance: parseFloat(distance) || 0,
       durée: parseInt(durée) || 0,
+      intensité: parseInt(intensité) || 0,
       date: new Date(date),
     });
     handleBack();
@@ -139,6 +149,30 @@ export default function EditCompetitionPage({ competitionId, onNavigate, returnT
               className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-[#F57BFF] outline-none transition-all text-gray-900 dark:text-white"
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex justify-between">
+              <span className="flex items-center gap-2"><Gauge className="w-4 h-4" /> Priorité</span>
+              <span className="text-[#F57BFF] font-bold">{intensité}/3</span>
+            </label>
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl">
+              <input
+                type="range"
+                min="0"
+                max="3"
+                step="1"
+                value={intensité}
+                onChange={(e) => setIntensité(e.target.value)}
+                className="w-full accent-[#F57BFF]"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-2">
+                <span>C</span>
+                <span>B</span>
+                <span>A</span>
+                <span>A+</span>
+              </div>
+            </div>
         </div>
 
         <button

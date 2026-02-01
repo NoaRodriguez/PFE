@@ -23,9 +23,18 @@ export default function EditSessionPage({ sessionId, onNavigate, returnTo }: Edi
   const [description, setDescription] = useState(session?.description || '');
   const [sport, setSport] = useState<SportType>(session?.sport || 'course');
   const [type, setType] = useState<SessionType>(session?.type || 'endurance');
+  const [intensité, setIntensité] = useState(session?.intensité?.toString() || '0');
+  const formatDateLocal = (dateInput: Date | string) => {
+    const d = new Date(dateInput);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [date, setDate] = useState(
     session?.date 
-      ? new Date(session.date).toISOString().split('T')[0] 
+      ? formatDateLocal(session.date)
       : new Date().toISOString().split('T')[0]
   );
 
@@ -50,6 +59,7 @@ export default function EditSessionPage({ sessionId, onNavigate, returnTo }: Edi
       description,
       sport,
       type,
+      intensité: parseInt(intensité) || 0,
       date: new Date(date),
     });
     handleBack(); // On utilise le retour intelligent après sauvegarde
@@ -135,6 +145,30 @@ export default function EditSessionPage({ sessionId, onNavigate, returnTo }: Edi
            </div>
         </div>
 
+        <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex justify-between">
+              <span>Intensité (RPE)</span>
+              <span className="text-[#00F65C] font-bold">{intensité}/3</span>
+            </label>
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl">
+              <input 
+                type="range" 
+                min="0" 
+                max="3" 
+                step="1" 
+                value={intensité} 
+                onChange={(e) => setIntensité(e.target.value)} 
+                className="w-full accent-[#00F65C]" 
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-2">
+                <span>Repos</span>
+                <span>Léger</span>
+                <span>Modéré</span>
+                <span>Intense</span>
+              </div>
+            </div>
+        </div>
+        
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <Clock className="w-4 h-4" /> Durée (min)

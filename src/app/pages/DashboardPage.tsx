@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useWeeklyAdvice } from '../hooks/useWeeklyAdvice';
-import { Calendar, Activity, LogOut, Moon, Sun, Lightbulb, Trophy, Dumbbell, Zap, Shield, Scale, ChevronRight } from 'lucide-react';
+import { TrainingSession } from '../types'; // Import du type
+import { Competition } from '../types'; // Import du type
+import { Calendar, Activity, LogOut, Moon, Sun, Lightbulb, Trophy, Dumbbell, Zap, Shield, Scale, ChevronRight, X, Clock, AlignLeft, Pencil, MapPin} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion'; // Ajout des animations
 import { getAdviceOfTheDay } from '../data/nutritionAdvices';
 import WeeklyCalendar from '../components/WeeklyCalendar';
 import logo from '../../assets/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
@@ -26,6 +29,8 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   useWeeklyAdvice(userProfile?.id);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
+  const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
 
   useEffect(() => {
     getTodayNutrition();
@@ -126,57 +131,77 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             {selectedDayEvents.length > 0 ? (
               <div className="space-y-2.5">
                 {selectedDayEvents.map((event) => (
-                  <div
-                    key={`${event.type}-${event.id}`}
-                    onClick={() => onNavigate(event.type === 'session' ? `edit-session:${event.id}:dashboard` : `edit-competition:${event.id}:dashboard`)}
-                    className="p-3.5 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{
-                      background: event.type === 'session'
-                        ? 'linear-gradient(90deg, rgba(0, 246, 92, 0.1) 0%, rgba(193, 251, 0, 0.1) 100%)'
-                        : 'linear-gradient(90deg, rgba(193, 251, 0, 0.1) 0%, rgba(245, 123, 255, 0.1) 100%)'
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
-                          {event.type === 'session' ? event.titre : event.nom}
-                        </h4>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {event.type === 'session'
-                            ? `${event.durée} min • ${event.sport}`
-                            : `${event.distance} km • Compétition`
-                          }
-                        </p>
-                      </div>
-                      {event.type === 'session' ? (
-                        <Activity className="w-6 h-6" style={{ color: '#00F65C' }} />
-                      ) : (
-                        <Trophy className="w-6 h-6" style={{ color: '#F57BFF' }} />
-                      )}
-                    </div>
+              <div
+                key={`${event.type}-${event.id}`}
+                // LOGIQUE : Ouvre la modale correspondante (Session ou Compet)
+                onClick={() => {
+                  if (event.type === 'session') {
+                    setSelectedSession(event as unknown as TrainingSession);
+                  } else {
+                    setSelectedCompetition(event as unknown as Competition);
+                  }
+                }}
+                className="p-3.5 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
+                style={{
+                  background: event.type === 'session'
+                    ? 'linear-gradient(90deg, rgba(0, 246, 92, 0.1) 0%, rgba(193, 251, 0, 0.1) 100%)'
+                    : 'linear-gradient(90deg, rgba(193, 251, 0, 0.1) 0%, rgba(245, 123, 255, 0.1) 100%)'
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                      {event.type === 'session' ? event.titre : event.nom}
+                    </h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {event.type === 'session'
+                        ? `${event.durée} min • ${event.sport}`
+                        : `${event.distance} km • Compétition`
+                      }
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* BOUTON MODIFIER (Pour TOUS les types maintenant) */}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Empêche d'ouvrir la modale
+                        if (event.type === 'session') {
+                           onNavigate(`edit-session:${event.id}:dashboard`);
+                        } else {
+                           onNavigate(`edit-competition:${event.id}:dashboard`);
+                        }
+                      }}
+                      className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors rounded-full hover:bg-white/50 dark:hover:bg-black/20"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
 
-                    {event.type === 'session' && event.conseil && (
-                      <div className="mt-2 p-3 bg-white dark:bg-black/30 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col gap-1.5 shadow-sm">
-                         <div className="flex items-center gap-2 mb-1 border-b border-gray-200 dark:border-gray-700 pb-1.5">
-                            <div className="bg-yellow-400/20 p-1 rounded-md">
-                                <Lightbulb className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
-                            </div>
-                            <span className="text-[9px] font-bold uppercase text-gray-500 tracking-wider">Nutrition Performance</span>
-                         </div>
-                         <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
-                            <span className="font-bold text-[#00F65C]">Avant:</span> 
-                            <span className="text-gray-800 dark:text-gray-300 leading-snug">{event.conseil.avant}</span>
-                            
-                            <span className="font-bold text-[#C1FB00]">Pendant:</span> 
-                            <span className="text-gray-800 dark:text-gray-300 leading-snug">{event.conseil.pendant}</span>
-                            
-                            <span className="font-bold text-[#F57BFF]">Après:</span> 
-                            <span className="text-gray-800 dark:text-gray-300 leading-snug">{event.conseil.apres}</span>
-                         </div>
-                      </div>
+                    {event.type === 'session' ? (
+                      <Activity className="w-6 h-6" style={{ color: '#00F65C' }} />
+                    ) : (
+                      <Trophy className="w-6 h-6" style={{ color: '#F57BFF' }} />
                     )}
                   </div>
-                ))}
+                </div>
+
+                {/* Aperçu du Conseil (Session uniquement) */}
+                {event.type === 'session' && event.conseil && (
+                  <div className="mt-2 p-3 bg-white dark:bg-black/30 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col gap-1.5 shadow-sm">
+                     <div className="flex items-center gap-2 mb-1 border-b border-gray-200 dark:border-gray-700 pb-1.5">
+                        <div className="bg-yellow-400/20 p-1 rounded-md">
+                            <Lightbulb className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <span className="text-[9px] font-bold uppercase text-gray-500 tracking-wider">Nutrition Performance</span>
+                     </div>
+                     <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
+                        <span className="font-bold text-[#00F65C]">Avant:</span> 
+                        <span className="text-gray-800 dark:text-gray-300 leading-snug line-clamp-1">{event.conseil.avant}</span>
+                     </div>
+                  </div>
+                )}
+              </div>
+            ))}
               </div>
             ) : (
               <div className="text-center py-6">
@@ -336,6 +361,198 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         </div>
 
       </div>
+
+      {/* MODALE DÉTAIL SÉANCE (DASHBOARD) */}
+      <AnimatePresence>
+        {selectedSession && (
+          <motion.div 
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex flex-col overflow-hidden"
+          >
+             {/* Header */}
+             <div className="relative p-6 pt-8 flex items-center justify-between border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md z-10">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate pr-4">
+                  {selectedSession.titre}
+                </h2>
+                <button 
+                  onClick={() => setSelectedSession(null)}
+                  className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                </button>
+             </div>
+
+             {/* Contenu */}
+             <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6">
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 whitespace-nowrap">
+                      <Activity className="w-4 h-4 text-[#00F65C]" />
+                      <span className="font-medium text-sm capitalize">{selectedSession.sport}</span>
+                   </div>
+                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 whitespace-nowrap">
+                      <Clock className="w-4 h-4 text-[#00F65C]" />
+                      <span className="font-medium text-sm">{selectedSession.durée} min</span>
+                   </div>
+                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 whitespace-nowrap">
+                      <span className="text-[#00F65C] font-bold text-sm">RPE {selectedSession.intensité}/3</span>
+                   </div>
+                </div>
+
+                {selectedSession.description && (
+                  <div className="bg-gray-50 dark:bg-slate-900 p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
+                     <h3 className="flex items-center gap-2 text-sm font-bold uppercase text-gray-400 mb-3 tracking-wider">
+                        <AlignLeft className="w-4 h-4" /> Notes
+                     </h3>
+                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                        {selectedSession.description}
+                     </p>
+                  </div>
+                )}
+
+                {selectedSession.conseil ? (
+                  <div className="space-y-4">
+                     <div className="flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-[#C1FB00]" />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Stratégie Nutrition</h3>
+                     </div>
+
+                     <div className="grid gap-4">
+                        <div className="p-5 bg-gradient-to-br from-[#00F65C]/10 to-[#00F65C]/5 rounded-2xl border border-[#00F65C]/20">
+                           <span className="text-xs font-bold text-[#00F65C] uppercase tracking-widest mb-1 block">Avant</span>
+                           <p className="text-gray-800 dark:text-gray-200 font-medium leading-relaxed">
+                              {selectedSession.conseil.avant}
+                           </p>
+                        </div>
+
+                        <div className="p-5 bg-gradient-to-br from-[#C1FB00]/10 to-[#C1FB00]/5 rounded-2xl border border-[#C1FB00]/20">
+                           <span className="text-xs font-bold text-[#aacc00] dark:text-[#C1FB00] uppercase tracking-widest mb-1 block">Pendant</span>
+                           <p className="text-gray-800 dark:text-gray-200 font-medium leading-relaxed">
+                              {selectedSession.conseil.pendant}
+                           </p>
+                        </div>
+
+                        <div className="p-5 bg-gradient-to-br from-[#F57BFF]/10 to-[#F57BFF]/5 rounded-2xl border border-[#F57BFF]/20">
+                           <span className="text-xs font-bold text-[#F57BFF] uppercase tracking-widest mb-1 block">Après</span>
+                           <p className="text-gray-800 dark:text-gray-200 font-medium leading-relaxed">
+                              {selectedSession.conseil.apres}
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-500 bg-gray-50 dark:bg-slate-900 rounded-2xl border-dashed border border-gray-200 dark:border-slate-800">
+                     Pas de conseil pour cette séance.
+                  </div>
+                )}
+             </div>
+
+             <div className="p-4 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 pb-8">
+                <button
+                  onClick={() => {
+                     onNavigate(`edit-session:${selectedSession.id}:dashboard`);
+                     setSelectedSession(null);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-gray-900 dark:bg-white text-white dark:text-gray-900 active:scale-95 transition-transform"
+                >
+                   <Pencil className="w-4 h-4" /> Modifier la séance
+                </button>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedCompetition && (
+          <motion.div 
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex flex-col overflow-hidden"
+          >
+             {/* Header */}
+             <div className="relative p-6 pt-8 flex items-center justify-between border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md z-10">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate pr-4">
+                  {selectedCompetition.nom}
+                </h2>
+                <button 
+                  onClick={() => setSelectedCompetition(null)}
+                  className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                </button>
+             </div>
+
+             {/* Contenu */}
+             <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6">
+                <div className="flex flex-wrap gap-3 pb-2">
+                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800">
+                      <Trophy className="w-4 h-4 text-[#F57BFF]" />
+                      <span className="font-medium text-sm capitalize">{selectedCompetition.sport}</span>
+                   </div>
+                   {selectedCompetition.distance > 0 && (
+                     <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800">
+                        <MapPin className="w-4 h-4 text-[#F57BFF]" />
+                        <span className="font-medium text-sm">{selectedCompetition.distance} km</span>
+                     </div>
+                   )}
+                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800">
+                      <span className="text-gray-500 text-sm">Priorité</span>
+                      <span className="text-[#F57BFF] font-bold text-sm">
+                        {['C', 'B', 'A', 'A+'][selectedCompetition.intensité || 0]}
+                      </span>
+                   </div>
+                </div>
+
+                {/* Description / Objectif temps (CORRIGÉ) */}
+                <div className="bg-gray-50 dark:bg-slate-900 p-5 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-4">
+                   {selectedCompetition.durée && selectedCompetition.durée > 0 && (
+                     <div>
+                        <h3 className="flex items-center gap-2 text-sm font-bold uppercase text-gray-400 mb-1 tracking-wider">
+                           <Clock className="w-4 h-4" /> Objectif Temps
+                        </h3>
+                        <p className="text-gray-900 dark:text-white font-bold text-lg">
+                           {selectedCompetition.durée} min
+                        </p>
+                     </div>
+                   )}
+                   
+                   {selectedCompetition.description && (
+                     <div>
+                        <h3 className="flex items-center gap-2 text-sm font-bold uppercase text-gray-400 mb-2 tracking-wider">
+                           <AlignLeft className="w-4 h-4" /> Notes
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                           {selectedCompetition.description}
+                        </p>
+                     </div>
+                   )}
+                   
+                   {!selectedCompetition.durée && !selectedCompetition.description && (
+                      <p className="text-gray-500 text-sm italic">Aucune note supplémentaire.</p>
+                   )}
+                </div>
+             </div>
+
+             {/* Footer */}
+             <div className="p-4 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 pb-8">
+                <button
+                  onClick={() => {
+                     onNavigate(`edit-competition:${selectedCompetition.id}:calendar`);
+                     setSelectedCompetition(null);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-gray-900 dark:bg-white text-white dark:text-gray-900 active:scale-95 transition-transform"
+                >
+                   <Pencil className="w-4 h-4" /> Modifier la compétition
+                </button>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

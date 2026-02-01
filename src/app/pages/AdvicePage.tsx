@@ -27,6 +27,7 @@ const getIngredientIcon = (name: string) => {
 export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: { onNavigate: (page: string) => void, initialCategoryId?: string, returnTo?: string }) {
   const { weeklyAdvice, dailyAdvice } = useApp(); ////////////////////////////////////////
   const [showTip, setShowTip] = useState(false);
+  const [showWeeklyTip, setShowWeeklyTip] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,24 +62,28 @@ export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: 
       <div className="space-y-8 mt-4 relative z-0">
         
         {/* CONSEIL SEMAINE */}
-        <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 shadow-xl dark:shadow-2xl group transition-all">
+        <div 
+           onClick={() => setShowWeeklyTip(true)}
+           className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 shadow-xl dark:shadow-2xl cursor-pointer group active:scale-[0.98] transition-all hover:border-[#00F65C]/30" >
            <div className="absolute -top-10 -right-10 w-48 h-48 bg-[#00F65C] opacity-10 dark:opacity-20 blur-[80px] rounded-full pointer-events-none group-hover:opacity-20 dark:group-hover:opacity-30 transition-opacity duration-500" />
            
            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                 <weeklyTip.icon className="w-5 h-5 text-[#00F65C]" />
+              <div className="flex items-center gap-2 mb-3">
+                 <div className="bg-[#00F65C]/10 p-2 rounded-lg border border-[#00F65C]/20">
+                    <weeklyTip.icon className="w-4 h-4 text-[#00F65C]" />
+                 </div>
                  <span className="text-xs font-bold uppercase tracking-widest text-[#00F65C] bg-[#00F65C]/10 px-2 py-1 rounded">
                    {weeklyAdvice ? "STRATÉGIE DE LA SEMAINE" : weeklyTip.subtitle}
                  </span>
               </div>
               
-              <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 whitespace-pre-wrap"> 
+              <div className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3 whitespace-pre-wrap"> 
                  {weeklyAdvice || weeklyTip.content}
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300 font-medium bg-gray-100 dark:bg-slate-800 w-fit px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700/50 shadow-sm">
-                 Objectif : Régularité
-              </div>
+              <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-gray-100 dark:bg-[#00F65C]/10 text-gray-900 dark:text-[#00F65C] border border-gray-200 dark:border-[#00F65C]/20 px-4 py-2.5 rounded-xl group-hover:bg-gray-200 dark:group-hover:bg-[#00F65C]/20 transition-colors">
+                 Lire la suite <ArrowRight className="w-3 h-3" />
+              </button>
            </div>
         </div>
 
@@ -200,6 +205,51 @@ export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: 
         </div>
       </div>
 
+      {/* --- MODALE STRATÉGIE SEMAINE (NOUVELLE) --- */}
+      <AnimatePresence>
+        {showWeeklyTip && (
+          <motion.div 
+            initial={{ opacity: 0, x: "100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[100] bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white flex flex-col overflow-hidden"
+          >
+             <div className="relative z-10 p-6 pt-8 flex items-center justify-between border-b border-gray-200 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+                <button 
+                  onClick={() => setShowWeeklyTip(false)}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-slate-900 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-800 transition-colors border border-gray-200 dark:border-slate-800 text-sm font-bold text-gray-700 dark:text-slate-300"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Retour
+                </button>
+             </div>
+
+             <div className="relative z-10 px-6 mt-6 flex-1 overflow-y-auto pb-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <span className="text-4xl p-3 bg-[#00F65C]/10 rounded-2xl border border-[#00F65C]/20">📅</span>
+                    <div>
+                        <span className="text-[#00F65C] font-bold tracking-widest uppercase text-xs mb-1 block">
+                            Stratégie Hebdomadaire
+                        </span>
+                        <h2 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white">
+                            {weeklyAdvice ? "Focus de la semaine" : weeklyTip.title}
+                        </h2>
+                    </div>
+                </div>
+                
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#00F65C] opacity-5 blur-[60px] pointer-events-none" />
+                    
+                    <div className="text-gray-600 dark:text-slate-400 space-y-5 leading-relaxed whitespace-pre-wrap">
+                        {weeklyAdvice || weeklyTip.content}
+                    </div>
+                </div>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MODALE CONSEIL JOUR --- */}
       <AnimatePresence>
         {showTip && (
           <motion.div 
@@ -253,17 +303,7 @@ export default function AdvicePage({ onNavigate, initialCategoryId, returnTo }: 
                 </div>
              </div>
 
-             {dailyCategory && (
-               <div className="relative z-10 p-6 bg-gradient-to-t from-white dark:from-slate-950 via-white/95 dark:via-slate-950/95 to-transparent">
-                 <button
-                    onClick={() => { setShowTip(false); setSelectedCategoryId(dailyCategory.id); }}
-                    className="w-full py-4 rounded-2xl font-bold text-black flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg hover:brightness-110"
-                    style={{ backgroundColor: dailyCategory.themeColor }}
-                 >
-                    <dailyCategory.icon className="w-5 h-5" /> Voir {dailyCategory.title}
-                 </button>
-               </div>
-             )}
+             
           </motion.div>
         )}
       </AnimatePresence>
