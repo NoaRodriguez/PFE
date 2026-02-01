@@ -15,6 +15,8 @@ interface AppContextType {
   sessions: TrainingSession[];
   competitions: Competition[];
   dailyNutrition: DailyNutrition | null;
+  weeklyAdvice: string | null;
+  dailyAdvice: string | null; // [NEW DAILY]
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   // Auth methods
@@ -43,6 +45,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [dailyNutrition, setDailyNutrition] = useState<DailyNutrition | null>(null);
+  const [weeklyAdvice, setWeeklyAdvice] = useState<string | null>(null);
+  const [dailyAdvice, setDailyAdvice] = useState<string | null>(null); // [NEW DAILY]
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : true;
@@ -84,6 +89,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUserProfileState(null);
         setSessions([]);
         setCompetitions([]);
+        setWeeklyAdvice(null);
+        setDailyAdvice(null); // [NEW DAILY]
       }
     });
 
@@ -170,7 +177,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCompetitions(mappedCompetitions);
     }
 
+    const today = new Date().toISOString().split('T')[0];
+    const sessionAuth = await supabase.auth.getSession();
+    const token = sessionAuth.data.session?.access_token;
+    
+    // --- LOAD WEEKLY ADVICE ---
+    const { data: adviceData } = await supabase
+        .from('conseil_semaine')
+        .select('conseil')
+        .eq('id_utilisateur', userId)
+        .gte('date_creation', `${today}T00:00:00`)
+        .order('date_creation', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
+    if (adviceData) {
+        setWeeklyAdvice(adviceData.conseil);
+    } else {
+        // Trigger check WEEKLY
+        supabase.functions.invoke('generate-weekly-advice', {
+          body: { user_id: userId },
+          headers: { Authorization: `Bearer ${token}` }
+        }).then(async ({ data, error }) => {
+          if (error) console.error('Error invoking weekly advice:', error);
+          else if (data?.advice) {
+             setWeeklyAdvice(data.advice); 
+          }
+        });
+    }
+
+    // --- LOAD DAILY ADVICE [NEW DAILY] ---
+    const { data: dailyAdviceData } = await supabase
+        .from('conseil_jour')
+        .select('conseil')
+        .eq('id_utilisateur', userId)
+        .gte('date_creation', `${today}T00:00:00`)
+        .order('date_creation', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    
+    if (dailyAdviceData) {
+        setDailyAdvice(dailyAdviceData.conseil);
+    } else {
+        // Trigger check DAILY
+        supabase.functions.invoke('generate-daily-advice', {
+             body: { user_id: userId },
+             headers: { Authorization: `Bearer ${token}` }
+        }).then(async ({ data, error }) => {
+            if (error) console.error('Error invoking daily advice:', error);
+            else if (data?.advice) {
+                setDailyAdvice(data.advice);
+            }
+        });
+    }
   };
 
   const parseJsonSafe = (input: string | any[] | null) => {
@@ -258,6 +317,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // --- TRIGGER HELPERS ---
+
+  const triggerWeeklyIfRelevant = async (dateStr: string, user_id: string, token: string) => {
+      const date = new Date(dateStr);
+      date.setHours(0, 0, 0, 0);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const tenDaysLater = new Date(today);
+      tenDaysLater.setDate(today.getDate() + 10);
+
+      if (date.getTime() >= today.getTime() && date.getTime() <= tenDaysLater.getTime()) {
+          console.log(`[Weekly Trigger] Date ${dateStr} is within 10 days horizon. Regenerating...`);
+          supabase.functions.invoke('generate-weekly-advice', {
+              body: { user_id: user_id, force_update: true },
+              headers: { Authorization: `Bearer ${token}` }
+          }).then(async ({ data, error }) => {
+              if (error) console.error('[Weekly Trigger] Error:', error);
+              else if (data?.advice) {
+                  setWeeklyAdvice(data.advice);
+              }
+          });
+      }
+  };
+
+  const triggerDailyIfRelevant = async (dateStr: string, user_id: string, token: string) => {
+      const date = new Date(dateStr);
+      date.setHours(0, 0, 0, 0);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+
+      // Trigger if Yesterday, Today, or Tomorrow
+      if (date.getTime() === yesterday.getTime() || date.getTime() === today.getTime() || date.getTime() === tomorrow.getTime()) {
+          console.log(`[Daily Trigger] Date ${dateStr} is relevant (J-1, J, J+1). Regenerating...`);
+           supabase.functions.invoke('generate-daily-advice', {
+              body: { user_id: user_id, force_update: true },
+              headers: { Authorization: `Bearer ${token}` }
+          }).then(async ({ data, error }) => {
+              if (error) console.error('[Daily Trigger] Error:', error);
+              else if (data?.advice) {
+                  setDailyAdvice(data.advice);
+              }
+          });
+      }
+  };
+
   const addSession = async (session: TrainingSession) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -286,17 +399,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     if (data) {
-      // Map back
-      const newSession: TrainingSession = {
-        ...session,
-        id: data.id
-      };
+      const newSession: TrainingSession = { ...session, id: data.id };
       setSessions(prev => [newSession, ...prev]);
+
+      // --- TRIGGERS ---
+      const sessionAuth = await supabase.auth.getSession();
+      const token = sessionAuth.data.session?.access_token;
+      if (token) {
+          triggerWeeklyIfRelevant(session.date, user.id, token);
+          triggerDailyIfRelevant(session.date, user.id, token);
+      }
     }
   };
 
   const updateSession = async (session: TrainingSession) => {
-    // On récupère l'ID directement depuis l'objet session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return; // Should allow triggers even if context user might be null? safely assume logged in if updating
+    
+    // Find old session to check date change
+    const oldSession = sessions.find(s => s.id === session.id);
+    const oldDate = oldSession?.date;
+    const newDate = session.date;
+
     const id = session.id;
 
     const { error } = await supabase
@@ -314,19 +438,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .eq('id', id);
 
     if (!error) {
-      // Mise à jour de l'état local
       setSessions(prev => prev.map(s => s.id === id ? session : s));
+
+      // --- TRIGGERS ---
+      const sessionAuth = await supabase.auth.getSession();
+      const token = sessionAuth.data.session?.access_token;
+      if (token) {
+          // Trigger for New Date
+          triggerWeeklyIfRelevant(newDate, user.id, token);
+          triggerDailyIfRelevant(newDate, user.id, token);
+
+          // Trigger for Old Date (if different)
+          if (oldDate && oldDate !== newDate) {
+              triggerWeeklyIfRelevant(oldDate, user.id, token);
+              triggerDailyIfRelevant(oldDate, user.id, token);
+          }
+      }
+
     } else {
       console.error("Erreur lors de la mise à jour de la séance:", error);
-      throw error; // Important pour que le 'catch' de la page fonctionne
+      throw error; 
     }
   };
 
   const deleteSession = async (id: string | number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const sessionToDelete = sessions.find(s => String(s.id) === String(id));
+    const deletedDate = sessionToDelete?.date;
+
     const { error } = await supabase.from('seance').delete().eq('id', id);
     if (!error) {
-      // CORRECTION : On convertit tout en String pour être sûr que "15" élimine bien 15
       setSessions(prev => prev.filter(s => String(s.id) !== String(id)));
+
+       // --- TRIGGERS ---
+      if (user && deletedDate) {
+        const sessionAuth = await supabase.auth.getSession();
+        const token = sessionAuth.data.session?.access_token;
+        if (token) {
+            triggerWeeklyIfRelevant(deletedDate, user.id, token);
+            triggerDailyIfRelevant(deletedDate, user.id, token);
+        }
+      }
     } else {
       console.error("Erreur lors de la suppression de la séance:", error);
     }
@@ -353,16 +505,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     if (data) {
-      const newComp: Competition = {
-        ...competition,
-        id: data.id
-      };
+      const newComp: Competition = { ...competition, id: data.id };
       setCompetitions(prev => [...prev, newComp]);
+
+      // --- TRIGGERS ---
+      const sessionAuth = await supabase.auth.getSession();
+      const token = sessionAuth.data.session?.access_token;
+      if (token) {
+          triggerWeeklyIfRelevant(competition.date, user.id, token);
+          triggerDailyIfRelevant(competition.date, user.id, token);
+      }
     }
   };
 
   const updateCompetition = async (competition: Competition) => {
-    // On récupère l'ID directement depuis l'objet competition
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const oldCompetition = competitions.find(c => c.id === competition.id);
+    const oldDate = oldCompetition?.date;
+    const newDate = competition.date;
+
     const id = competition.id;
 
     const updates = {
@@ -380,18 +543,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error('Error updating competition:', error, updates);
-      throw error; // Important pour propager l'erreur
+      throw error; 
     } else {
-      // Mise à jour de l'état local
       setCompetitions(prev => prev.map(c => c.id === id ? competition : c));
+
+       // --- TRIGGERS ---
+       const sessionAuth = await supabase.auth.getSession();
+       const token = sessionAuth.data.session?.access_token;
+       if (token) {
+           triggerWeeklyIfRelevant(newDate, user.id, token);
+           triggerDailyIfRelevant(newDate, user.id, token);
+
+           if (oldDate && oldDate !== newDate) {
+               triggerWeeklyIfRelevant(oldDate, user.id, token);
+               triggerDailyIfRelevant(oldDate, user.id, token);
+           }
+       }
     }
   };
 
   const deleteCompetition = async (id: string | number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const compToDelete = competitions.find(c => String(c.id) === String(id));
+    const deletedDate = compToDelete?.date;
+
     const { error } = await supabase.from('competition').delete().eq('id', id);
     if (!error) {
-      // CORRECTION : Idem ici, conversion en String pour la comparaison
       setCompetitions(prev => prev.filter(c => String(c.id) !== String(id)));
+
+       // --- TRIGGERS ---
+       if (user && deletedDate) {
+           const sessionAuth = await supabase.auth.getSession();
+           const token = sessionAuth.data.session?.access_token;
+           if (token) {
+               triggerWeeklyIfRelevant(deletedDate, user.id, token);
+               triggerDailyIfRelevant(deletedDate, user.id, token);
+           }
+       }
     } else {
       console.error("Erreur lors de la suppression de la compétition:", error);
     }
@@ -468,6 +656,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sessions,
         competitions,
         dailyNutrition,
+        weeklyAdvice,
+        dailyAdvice, // [NEW]
         isDarkMode,
         toggleDarkMode,
         signIn,

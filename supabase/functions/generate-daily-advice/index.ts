@@ -1,4 +1,4 @@
-// 1. UTILISATION DES URLS COMPLÈTES (Pour éviter l'erreur de bundling)
+// 1. UTILISATION DES URLS COMPLÈTES
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { OpenAI } from "https://esm.sh/openai@4"
 
@@ -21,7 +21,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
-// 2. UTILISATION DE Deno.serve (Méthode moderne recommandée)
+// 2. UTILISATION DE Deno.serve
 Deno.serve(async (req) => {
     // Handle CORS preflight explicitly
     if (req.method === 'OPTIONS') {
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
         const tomorrowStr = tomorrow.toISOString().split('T')[0]
 
         const { data: existingAdvice } = await supabase
-            .from('conseil_semaine')
+            .from('conseil_jour') // NOTE: Table distincte 'conseil_jour'
             .select('id')
             .eq('id_utilisateur', userId)
             .gte('date_creation', `${todayStr}T00:00:00`)
@@ -56,39 +56,48 @@ Deno.serve(async (req) => {
         
         if (existingAdvice && existingAdvice.length > 0) {
             if (force_update) {
-                console.log(`Force update requested. Deleting ${existingAdvice.length} existing advice(s) for user ${userId} on ${todayStr}.`)
+                console.log(`Force update requested. Deleting ${existingAdvice.length} existing daily advice(s) for user ${userId} on ${todayStr}.`)
                 const idsToDelete = existingAdvice.map(a => a.id)
                 await supabase
-                    .from('conseil_semaine')
+                    .from('conseil_jour')
                     .delete()
                     .in('id', idsToDelete)
             } else {
-                console.log(`Advice already exists for user ${userId} today.`)
-                return new Response(JSON.stringify({ message: 'Advice already exists for today' }), { headers: corsHeaders })
+                console.log(`Daily advice already exists for user ${userId} today.`)
+                return new Response(JSON.stringify({ message: 'Daily advice already exists for today' }), { headers: corsHeaders })
             }
         }
 
         // 1B. COLLECTE DU CONTEXTE UTILISATEUR
         const { data: profile } = await supabase.from('profil_utilisateur').select('*').eq('id', userId).single()
         
-        const endWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        // Dates pour fenêtre J-1 à J+1
+        const yesterday = new Date(now)
+        yesterday.setDate(now.getDate() - 1)
+        const yesterdayStr = yesterday.toISOString().split('T')[0]
 
-        // Récupération avec vos noms de colonnes réels
-        const { data: seances } = await supabase.from('seance').select('*').eq('id_utilisateur', userId).gte('date', todayStr).lte('date', endWeek)
-        const { data: comps } = await supabase.from('competition').select('*').eq('id_utilisateur', userId).gte('date', todayStr).lte('date', endWeek)
+        // Récupération des séances sur la fenêtre (Hier, Auj, Demain)
+        const { data: seances } = await supabase.from('seance')
+            .select('*')
+            .eq('id_utilisateur', userId)
+            .gte('date', yesterdayStr)
+            .lte('date', tomorrowStr)
+
+        const seance_JJ = seances?.filter(s => s.date.startsWith(todayStr)) || []
+        const seances_fenetre = seances || []
 
         // 2. DÉTERMINATION DU PROFIL
         let profileTag = "modere"
         const vol = (profile?.frequence_entrainement || "").toLowerCase()
-        
         if (vol.includes("10h") || vol.includes("haut niveau")) {
             profileTag = "haut_niveau"
         } else if (vol.includes("sédentaire") || vol.includes("reprise") || vol.includes("rem")) {
             profileTag = "REM"
         }
 
-        // 3. RECHERCHE RAG (Appel RPC match_nutrition)
-        const searchQuery = "Modèle méditerranéen, Oméga 3, équilibre acido-basique, charge glucidique"
+        // 3. RECHERCHE RAG
+        // On garde une recherche un peu générique ou ciblée "Quotidien"
+        const searchQuery = "Récupération quotidienne, chronobiologie alimentaire, petit-déjeuner performance, sommeil nutrition"
         const embeddingResponse = await openai.embeddings.create({
             model: "text-embedding-3-small",
             input: searchQuery,
@@ -98,48 +107,56 @@ Deno.serve(async (req) => {
         const { data: ragContextData } = await supabase.rpc('match_nutrition', {
             query_embedding: embedding,
             match_threshold: 0.4,
-            match_count: 8,
+            match_count: 5, // Moins de contexte nécessaire que pour la semaine
             filter_profil: profileTag,
-            filter_horizon: "week"
+            filter_horizon: "null" // On peut supposer que vous avez tagué des contenus 'day' ou on garde 'week' si 'day' n'existe pas
         })
 
         const ragContext = ragContextData as NutritionBlock[]
         const contextText = ragContext ? ragContext.map((r) => r.content).join("\n") : ""
 
-        // 4. ANALYSE D'INTENSITÉ (Détection risque IL-6)
-        const userSeances = (seances || []) as Seance[]
-        // Utilisation de 'intensité' avec accent comme dans votre table
-        const intenseCount = userSeances.filter((s) => s.intensité >= 2).length
-
-        // 5. GÉNÉRATION DU CONSEIL VIA GPT-4o
+        // 4. GÉNÉRATION DU CONSEIL VIA GPT-4o
         const prompt = `
-        Tu es un expert en nutrition sportive, agissant comme un préparateur physique personnel. Ton ton est cool, motivant et éducatif : évite le jargon médical froid, utilise des analogies concrètes, mais reste précis sur les chiffres.
-        Génère la STRATÉGIE DE LA SEMAINE pour ${profile?.prenom || 'l\'utilisateur'}.
-        
-        DONNÉES UTILISATEUR :
-        - Profil : ${JSON.stringify(profile)}
-        - profil_tag : ${profileTag}
-        - Séances (J à J+6) : ${JSON.stringify(seances)}
-        - Compétitions : ${JSON.stringify(comps)}
-        - Alerte Intensité : ${intenseCount} séances intenses détectées.
-        
-        CONTEXTE DU GUIDE NUTRITIONNEL :
-        ${contextText}
-        
-        DIRECTIVES DE REDACTION : 
-        - Focus de ta semaine : Commence par 4 à 5 phrases maximum qui donnent le "LA" de la semaine. Identifie l'événement majeur (une grosse séance, une compétition ou la récupération) et explique à l'utilisateur quel doit être son "Mindset" nutritionnel.
-        - SI AUCUNE SÉANCE N'EST PRÉVUE : Ne sois pas générique. Encourage une semaine de "Régénération" basée sur l'assiette méditerranéenne, le maintien des bons lipides et la micro-nutrition pour réparer les tissus.
-        - LOGIQUE DE PÉRIODISATION : 
-        Semaine calme : Garde le curseur à 55% de glucides complexes.
-        Prépa intense ou Compétition (J+3 ou J+6) : Annonce le passage à 70% pour saturer le glycogène
-        - ALERTE INFLAMMATION : Si intense_count > 3, explique avec pédagogie que trop d'intensité sans "resucre" produit de l'IL-6 qui bloque l'absorption du fer via l'hepcidine
-        
-        FORMAT DE SORTIE :
-        [Titre court avec Texte court de 4-5 phrases max : Identifie le point culminant de la semaine et l'objectif nutritionnel principal.]
-        1. Analyse de la Charge Hebdomadaire
-        2. Calendrier Stratégique (J à J+6)
-        3. Conseil Prévention
-        `
+Tu es un nutritionniste du sport de haut niveau, agissant comme un coach personnel. Ton ton est cool, motivant et éducatif. Tu expliques le "pourquoi" des choses sans être ennuyeux, en utilisant les données scientifiques du guide pour booster la confiance de l'utilisateur.
+
+Génère le CONSEIL DU JOUR (Stratégie 24h) pour ${profile?.prenom || 'l\'utilisateur'}
+
+DONNÉES D'ENTRÉE :
+
+Profil Utilisateur : ${JSON.stringify(profile)} (Poids : ${profile?.poids}kg).
+
+Objectif du jour (J) : ${JSON.stringify(seance_JJ)}
+
+Contexte (Hier J-1 / Demain J+1) : ${JSON.stringify(seances_fenetre)}.
+
+CONTEXTE DU GUIDE NUTRITIONNEL : ${contextText}
+
+DIRECTIVES DE RÉDACTION :
+
+LE FOCUS DU JOUR : Commence par 4 à 5 phrases maximum pour donner le ton de la journée. Identifie si c'est un jour de "Grosse Performance", de "Récupération Active" ou de "Charge". Explique l'enjeu principal (ex: protéger les muscles, saturer le glycogène ou limiter l'inflammation systémique).
+
+LOGIQUE DE RÉPARTITION : 
+* Matin : Focus protéines et bons lipides pour la vigilance (dopamine).
+* Midi : Équilibre végétaux/protéines et impérativement 3 c.à.s d'huile de colza pour les Oméga-3.
+* Soir : Glucides complexes pour favoriser la sérotonine (sommeil) et la recharge hépatique.
+
+SI AUCUNE SÉANCE N'EST PRÉVUE : Propose une journée de "Régénération Méditerranéenne". Focus sur la micro-nutrition (Zinc, Magnésium) pour réparer les tissus et l'hydratation de base (1,5 à 2L).
+
+LES INTERDITS : Jamais d'eau glacée (digestion). Pas de fibres ou de lactose dès ce soir si une compétition (Score 3) est prévue demain.
+
+FORMAT DE SORTIE ATTENDU :
+
+🎯 Ton Mindset du jour : [Titre inspirant]
+[Texte court de 4-5 phrases sur l'objectif n°1 de la journée]
+
+🍽️ Ta Structure Alimentaire
+Petit-déjeuner : [Composition] — Focus : Vigilance et satiété.
+Déjeuner : [Composition] — Focus : Anti-inflammation (Colza).
+Dîner : [Composition] — Focus : Sommeil et recharge glycogénique.
+
+💡 Le Petit Plus de l'Expert
+[Conseil micro-nutrition spécifique : Ex : 2 noix du Brésil pour le sélénium, ou importance du Magnésium ce soir si la séance d'hier était nerveuse.]
+`
 
         const chatResponse = await openai.chat.completions.create({
             model: "gpt-4o",
@@ -149,10 +166,11 @@ Deno.serve(async (req) => {
 
         const advice = chatResponse.choices[0].message.content
 
-        // 6. SAUVEGARDE (Correction : nom de colonne 'conseil' selon votre SQL)
-        await supabase.from('conseil_semaine').insert({
+        // 6. SAUVEGARDE (Table 'conseil_jour')
+        await supabase.from('conseil_jour').insert({
             id_utilisateur: userId,
-            conseil: advice
+            conseil: advice,
+            date: todayStr // Optionnel si vous voulez stocker la date explicite
         })
 
         return new Response(JSON.stringify({ advice }), {

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useWeeklyAdvice } from '../hooks/useWeeklyAdvice';
-import { Calendar, Activity, LogOut, Moon, Sun, Lightbulb, Trophy } from 'lucide-react';
+// J'ai ajouté Scale et ChevronRight pour la nouvelle section
+import { Calendar, Activity, LogOut, Moon, Sun, Lightbulb, Trophy, Dumbbell, Zap, Shield, Scale, ChevronRight } from 'lucide-react';
 import { getAdviceOfTheDay } from '../data/nutritionAdvices';
 import WeeklyCalendar from '../components/WeeklyCalendar';
 import logo from '../../assets/8824ddb81cd37c9aee6379966a78e0022b549f27.png';
@@ -10,7 +11,6 @@ interface DashboardPageProps {
   onNavigate: (page: string) => void;
 }
 
-// Fonction utilitaire pour comparer deux dates sans se soucier de l'heure
 const isSameDay = (date1: Date | string, date2: Date | string) => {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
@@ -22,25 +22,19 @@ const isSameDay = (date1: Date | string, date2: Date | string) => {
 };
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { userProfile, signOut, sessions, competitions, dailyNutrition, getTodayNutrition, isDarkMode, toggleDarkMode } = useApp();
+  const { userProfile, signOut, sessions, competitions, getTodayNutrition, isDarkMode, toggleDarkMode, dailyAdvice } = useApp();
 
-  // Trigger weekly advice generation check
   useWeeklyAdvice(userProfile?.id);
 
-  // État pour la date sélectionnée (initialisé à aujourd'hui)
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     getTodayNutrition();
   }, []);
 
-  // 1. Récupérer les SÉANCES du jour sélectionné
   const selectedDaySessions = sessions.filter((s) => isSameDay(s.date, selectedDate));
-
-  // 2. Récupérer les COMPÉTITIONS du jour sélectionné
   const selectedDayCompetitions = competitions.filter((c) => isSameDay(c.date, selectedDate));
 
-  // Combiner les deux pour l'affichage
   const selectedDayEvents = [
     ...selectedDaySessions.map(s => ({ ...s, type: 'session' as const })),
     ...selectedDayCompetitions.map(c => ({ ...c, type: 'competition' as const }))
@@ -50,21 +44,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     .filter((c) => new Date(c.date) > new Date())
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 1);
-
-  // Calculs nutritionnels
-  const totalProteins = dailyNutrition?.totalProteins || 0;
-  const totalCarbs = dailyNutrition?.totalCarbs || 0;
-  const totalFats = dailyNutrition?.totalFats || 0;
-
-  const proteinsPercentage = userProfile?.nutritionGoals.proteines
-    ? Math.min((totalProteins / userProfile.nutritionGoals.proteines) * 100, 100)
-    : 0;
-  const carbsPercentage = userProfile?.nutritionGoals.glucides
-    ? Math.min((totalCarbs / userProfile.nutritionGoals.glucides) * 100, 100)
-    : 0;
-  const fatsPercentage = userProfile?.nutritionGoals.lipides
-    ? Math.min((totalFats / userProfile.nutritionGoals.lipides) * 100, 100)
-    : 0;
 
   const adviceOfTheDay = getAdviceOfTheDay();
 
@@ -111,18 +90,27 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
       <div className="max-w-md mx-auto p-4 pb-24">
         {/* Advice of the Day */}
-        <div className="mb-4 bg-gradient-to-r from-[#00F65C]/10 via-[#C1FB00]/10 to-[#F57BFF]/10 rounded-2xl p-5 border border-[#00F65C]/20">
+        <div 
+          onClick={() => onNavigate('advice')}
+          className="mb-4 bg-gradient-to-r from-[#00F65C]/10 via-[#C1FB00]/10 to-[#F57BFF]/10 rounded-2xl p-5 border border-[#00F65C]/20 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div className="flex items-center gap-2 mb-2">
             <Lightbulb className="w-5 h-5 text-[#00F65C]" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Conseil du jour</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {dailyAdvice ? "Stratégie 24h" : "Conseil du jour"}
+            </h3>
           </div>
           <div className="flex items-start gap-3">
-            <div className="text-3xl">{adviceOfTheDay.icon}</div>
+            <div className="text-3xl">
+               {dailyAdvice ? "🎯" : adviceOfTheDay.icon}
+            </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{adviceOfTheDay.title}</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {adviceOfTheDay.description}
-              </p>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                 {dailyAdvice ? "Votre plan du jour" : adviceOfTheDay.title}
+              </h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 whitespace-pre-wrap">
+                {dailyAdvice ? dailyAdvice : adviceOfTheDay.description}
+              </div>
             </div>
           </div>
         </div>
@@ -148,11 +136,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                     onClick={() => onNavigate(event.type === 'session' ? `edit-session:${event.id}` : `edit-competition:${event.id}`)}
                     className="p-3.5 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
                     style={{
-                      // ICI : On force le dégradé en style inline pour être sûr qu'il s'affiche
-                      // 0.1 correspond à 10% d'opacité. Tu peux mettre 0.2 si tu veux que ce soit plus voyant.
                       background: event.type === 'session'
-                        ? 'linear-gradient(90deg, rgba(0, 246, 92, 0.1) 0%, rgba(193, 251, 0, 0.1) 100%)' // Vert -> Jaune
-                        : 'linear-gradient(90deg, rgba(193, 251, 0, 0.1) 0%, rgba(245, 123, 255, 0.1) 100%)' // Jaune -> Rose
+                        ? 'linear-gradient(90deg, rgba(0, 246, 92, 0.1) 0%, rgba(193, 251, 0, 0.1) 100%)'
+                        : 'linear-gradient(90deg, rgba(193, 251, 0, 0.1) 0%, rgba(245, 123, 255, 0.1) 100%)'
                     }}
                   >
                     <div className="flex items-center justify-between">
@@ -200,59 +186,48 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             )}
           </div>
 
-          {/* Nutrition Goals */}
+          {/* -------------------------------------------------------
+              MODIFICATION : CIBLES NUTRITION (REMPLACEMENT BARRES)
+              ------------------------------------------------------- */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-800">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Objectifs nutritionnels</h2>
-            <div className="space-y-3.5">
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Protéines</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {totalProteins.toFixed(0)}g / {userProfile?.nutritionGoals.proteines}g
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#F57BFF] to-[#F57BFF]/70 transition-all duration-500"
-                    style={{ width: `${proteinsPercentage}%` }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Glucides</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {totalCarbs.toFixed(0)}g / {userProfile?.nutritionGoals.glucides}g
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#00F65C] to-[#C1FB00] transition-all duration-500"
-                    style={{ width: `${carbsPercentage}%` }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Lipides</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {totalFats.toFixed(0)}g / {userProfile?.nutritionGoals.lipides}g
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#C1FB00] to-[#F57BFF] transition-all duration-500"
-                    style={{ width: `${fatsPercentage}%` }}
-                  />
-                </div>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Objectifs Journaliers</h2>
             </div>
-            <button
-              onClick={() => onNavigate('tracker')}
-              className="w-full mt-4 px-5 py-2.5 bg-gradient-to-r from-[#00F65C] to-[#C1FB00] text-[#292929] rounded-xl hover:opacity-90 transition-opacity text-sm font-medium"
-            >
-              Suivre ma nutrition
-            </button>
+
+            <div className="grid grid-cols-3 gap-3">
+               {/* Carte Protéines */}
+               <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-1.5">
+                  <Dumbbell className="w-5 h-5 text-[#00F65C]" />
+                  <div className="text-center">
+                     <span className="block text-xl font-bold text-gray-900 dark:text-white">
+                        {userProfile?.nutritionGoals.proteines || 0}g
+                     </span>
+                     <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">Protéines</span>
+                  </div>
+               </div>
+
+               {/* Carte Glucides */}
+               <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-1.5">
+                  <Zap className="w-5 h-5 text-[#C1FB00]" />
+                  <div className="text-center">
+                     <span className="block text-xl font-bold text-gray-900 dark:text-white">
+                        {userProfile?.nutritionGoals.glucides || 0}g
+                     </span>
+                     <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">Glucides</span>
+                  </div>
+               </div>
+
+               {/* Carte Lipides */}
+               <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-1.5">
+                  <Shield className="w-5 h-5 text-[#F57BFF]" />
+                  <div className="text-center">
+                     <span className="block text-xl font-bold text-gray-900 dark:text-white">
+                        {userProfile?.nutritionGoals.lipides || 0}g
+                     </span>
+                     <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">Lipides</span>
+                  </div>
+               </div>
+            </div>
           </div>
         </div>
 
@@ -287,6 +262,77 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             </div>
           </div>
         )}
+
+        {/* -------------------------------------------------------
+            AJOUT : PILIERS DE LA PERFORMANCE (À LA FIN)
+            ------------------------------------------------------- */}
+        <div className="mt-6">
+           <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Piliers SOMA</h2>
+              <button onClick={() => onNavigate('advice')} className="text-xs font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Voir tout
+              </button>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-3">
+              {/* Carte 1 : Construction (Muscle) */}
+              <div 
+                 onClick={() => onNavigate('advice')}
+                 className="p-4 rounded-2xl bg-[#00F65C]/5 border border-[#00F65C]/10 hover:bg-[#00F65C]/10 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3"
+              >
+                 <div className="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+                    <Dumbbell className="w-5 h-5 text-[#00F65C]" />
+                 </div>
+                 <div>
+                    <span className="block font-bold text-gray-900 dark:text-white text-sm">Construction</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Muscle</span>
+                 </div>
+              </div>
+
+              {/* Carte 2 : Énergie (Glucides) */}
+              <div 
+                 onClick={() => onNavigate('advice')}
+                 className="p-4 rounded-2xl bg-[#C1FB00]/5 border border-[#C1FB00]/10 hover:bg-[#C1FB00]/10 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3"
+              >
+                 <div className="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+                    <Zap className="w-5 h-5 text-[#C1FB00]" />
+                 </div>
+                 <div>
+                    <span className="block font-bold text-gray-900 dark:text-white text-sm">Énergie</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Fuel</span>
+                 </div>
+              </div>
+
+              {/* Carte 3 : Protection (Récup) */}
+              <div 
+                 onClick={() => onNavigate('advice')}
+                 className="p-4 rounded-2xl bg-[#F57BFF]/5 border border-[#F57BFF]/10 hover:bg-[#F57BFF]/10 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3"
+              >
+                 <div className="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+                    <Shield className="w-5 h-5 text-[#F57BFF]" />
+                 </div>
+                 <div>
+                    <span className="block font-bold text-gray-900 dark:text-white text-sm">Récup</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Protection</span>
+                 </div>
+              </div>
+
+              {/* Carte 4 : Vitalité (Balance) */}
+              <div 
+                 onClick={() => onNavigate('advice')}
+                 className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 hover:bg-blue-500/10 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3"
+              >
+                 <div className="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+                    <Scale className="w-5 h-5 text-blue-400" />
+                 </div>
+                 <div>
+                    <span className="block font-bold text-gray-900 dark:text-white text-sm">Vitalité</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Équilibre</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+
       </div>
     </div>
   );

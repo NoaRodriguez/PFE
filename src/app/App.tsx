@@ -3,7 +3,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import BottomNav from './components/BottomNav';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
-import TrackerPage from './pages/TrackerPage';
 import AdvicePage from './pages/AdvicePage';
 import ProfilePage from './pages/ProfilePage';
 import AddSessionPage from './pages/AddSessionPage';
@@ -63,8 +62,6 @@ function AppContent() {
         return <DashboardPage onNavigate={setCurrentPage} />;
       case 'calendar':
         return <CalendarPage onNavigate={setCurrentPage} />;
-      case 'tracker':
-        return <TrackerPage onNavigate={setCurrentPage} />;
       case 'advice':
         return <AdvicePage onNavigate={setCurrentPage} />;
       case 'profile':
