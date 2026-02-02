@@ -153,7 +153,7 @@ export default function EditCompetitionPage({ competitionId, onNavigate, returnT
 
         <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex justify-between">
-              <span className="flex items-center gap-2"><Gauge className="w-4 h-4" /> Priorité</span>
+              <span>Intensité (RPE)</span>
               <span className="text-[#F57BFF] font-bold">{intensité}/3</span>
             </label>
             <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl">
@@ -167,10 +167,10 @@ export default function EditCompetitionPage({ competitionId, onNavigate, returnT
                 className="w-full accent-[#F57BFF]"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-2">
-                <span>C</span>
-                <span>B</span>
-                <span>A</span>
-                <span>A+</span>
+                <span>Repos</span>
+                <span>Léger</span>
+                <span>Modéré</span>
+                <span>Intense</span>
               </div>
             </div>
         </div>

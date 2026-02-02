@@ -315,11 +315,8 @@ export default function CalendarPage({ onNavigate }: CalendarPageProps) {
                         <span className="font-medium text-sm">{selectedCompetition.distance} km</span>
                      </div>
                    )}
-                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800">
-                      <span className="text-gray-500 text-sm">Priorité</span>
-                      <span className="text-[#F57BFF] font-bold text-sm">
-                        {['C', 'B', 'A', 'A+'][selectedCompetition.intensité || 0]}
-                      </span>
+                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 whitespace-nowrap">
+                      <span className="text-[#F57BFF] font-bold text-sm">RPE {selectedCompetition.intensité}/3</span>
                    </div>
                 </div>
 
